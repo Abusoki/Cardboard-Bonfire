@@ -64,3 +64,5 @@ export default function AuthScreen() {
                 </div>
             </div>
         </div>
+    );
+}
