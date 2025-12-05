@@ -2,8 +2,9 @@ import React from 'react';
 import { Clock, ChevronRight } from 'lucide-react';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { generateRecruit, generateId } from '../utils/mechanics';
+import { generateRecruit } from '../utils/mechanics';
 import { TAVERN_REFRESH_MS } from '../config/gameData';
+import { generateId } from '../utils/helpers';
 
 export default function Tavern({ tavernState, troops, maxTroops, setView, user, appId }) {
     
@@ -61,3 +62,5 @@ export default function Tavern({ tavernState, troops, maxTroops, setView, user, 
                 <button onClick={refreshTavern} className="text-xs text-slate-600 underline mt-4">(Dev: Force Refresh)</button>
             </div>
         </div>
+    );
+}
