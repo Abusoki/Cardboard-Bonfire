@@ -11,7 +11,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         
         // 2. Your Sub-Projects (CHANGE 'folder-name' to your actual folder names)
-        projectOne: resolve(__dirname, 'TCG'),
+        projectOne: resolve(__dirname, 'TCG/tcg.html'),
       },
     },
   },
