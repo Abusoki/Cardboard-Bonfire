@@ -360,11 +360,12 @@
             </div>
         );
 
-        // 4. Unified Card Search (Unchanged)
+        // 4. Unified Card Search (Updated for Partner)
         const CardSearch = ({ onSelect, onClose, mode = 'commander' }) => {
             const [query, setQuery] = useState('');
             const [results, setResults] = useState([]);
             const [loading, setLoading] = useState(false);
+            const [asPartner, setAsPartner] = useState(false);
             const debounceRef = useRef(null);
 
             const searchScryfall = async (q) => {
@@ -403,17 +404,25 @@
             return (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-                        <div className="p-4 border-b border-slate-700 flex items-center gap-3">
-                            <Icons.Search className="text-slate-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                placeholder={mode === 'commander' ? "Search Commander..." : "Search Scryfall For Any Card.."}
-                                className="bg-transparent border-none outline-none text-white w-full placeholder:text-slate-500"
-                                value={query}
-                                onChange={handleInput}
-                                autoFocus
-                            />
-                            <button onClick={onClose}><Icons.X className="text-slate-400 hover:text-white w-5 h-5" /></button>
+                        <div className="p-4 border-b border-slate-700 flex flex-col gap-2">
+                           <div className="flex items-center gap-3">
+                                <Icons.Search className="text-slate-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder={mode === 'commander' ? "Search Commander..." : "Search Scryfall For Any Card.."}
+                                    className="bg-transparent border-none outline-none text-white w-full placeholder:text-slate-500"
+                                    value={query}
+                                    onChange={handleInput}
+                                    autoFocus
+                                />
+                                <button onClick={onClose}><Icons.X className="text-slate-400 hover:text-white w-5 h-5" /></button>
+                           </div>
+                           {mode === 'commander' && (
+                               <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer self-start ml-8">
+                                   <input type="checkbox" checked={asPartner} onChange={e => setAsPartner(e.target.checked)} className="rounded border-slate-600 bg-slate-800 text-purple-600 focus:ring-purple-500"/>
+                                   <span>Add as Partner</span>
+                               </label>
+                           )}
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-2">
                             {loading && <div className="text-center text-slate-500 py-8">Searching Scryfall...</div>}
@@ -426,7 +435,7 @@
                                         image: card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop || '',
                                         fullImage: card.image_uris?.large || card.card_faces?.[0]?.image_uris?.large || '',
                                         artist: card.artist || card.card_faces?.[0]?.artist || 'Unknown'
-                                    })}
+                                    }, asPartner)}
                                     className="flex items-center gap-4 p-2 hover:bg-slate-800 rounded-lg cursor-pointer transition-colors group"
                                 >
                                     <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 shrink-0 border border-slate-700 group-hover:border-purple-500">
@@ -483,7 +492,7 @@
             if (loading) return <div className="flex items-center justify-center h-full text-slate-400">Loading Stats...</div>;
 
             return (
-                <div className="p-4 md:p-8 max-w-6xl mx-auto h-full overflow-y-auto scroll-container">
+                <div className="absolute inset-0 flex flex-col p-4 md:p-8 overflow-y-auto scroll-container pb-24">
                     <h1 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
                         <Icons.BarChart2 className="w-8 h-8 text-purple-500" />
                         Meta Statistics
@@ -574,12 +583,13 @@
             );
         };
 
-        // 6. Player Card (Unchanged)
-        const PlayerCard = ({ id, name, life, commander, color, poison = 0, commanderDamage = {}, milled = false, onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog }) => {
+        // 6. Player Card (Updated for Partner & Kick)
+        const PlayerCard = ({ id, name, life, commander, partner, color, poison = 0, commanderDamage = {}, milled = false, onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog, canKick, onKick }) => {
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
             const [showTools, setShowTools] = useState(false);
             const [rotation, setRotation] = useState(0);
             const [activeTooltip, setActiveTooltip] = useState(null);
+            const [confirmKick, setConfirmKick] = useState(false);
 
             const pushToLog = (msg) => { if (onLog) onLog(msg); };
             const lifeChangeRef = useRef(0);
@@ -588,6 +598,7 @@
             const adjustLife = (amount) => {
                 const newLife = life + amount;
                 const deadByPoison = poison >= 10;
+                // Check damages: Primary or Partner > 21
                 const deadByCmdr = Object.values(commanderDamage).some(dmg => dmg >= 21);
                 const deadByLife = newLife <= 0;
                 onUpdate(id, { life: newLife, isDead: deadByPoison || deadByCmdr || deadByLife || milled });
@@ -620,11 +631,11 @@
                 pushToLog(`${name}: ${isNowMilled ? 'Milled Out' : 'Recovered from Mill'}`);
             };
 
-            const adjustCmdrDamage = (sourceId, amount) => {
-                const current = commanderDamage[sourceId] || 0;
+            // key can be just opponentId (main) or opponentId-partner
+            const adjustCmdrDamage = (key, amount, sourceName) => {
+                const current = commanderDamage[key] || 0;
                 const newDmg = Math.max(0, current + amount);
-                const newMap = { ...commanderDamage, [sourceId]: newDmg };
-                const sourceName = players.find(p => p.id == sourceId)?.name || "Unknown";
+                const newMap = { ...commanderDamage, [key]: newDmg };
                 const deadByPoison = poison >= 10;
                 const deadByCmdr = Object.values(newMap).some(dmg => dmg >= 21);
                 const deadByLife = life <= 0;
@@ -636,8 +647,8 @@
             const rotateClass = `rotate-${rotation}`;
             const isSideways = rotation === 90 || rotation === 270;
             const cardClasses = isWinner 
-                ? `relative flex flex-col h-full rounded-2xl overflow-hidden transition-all duration-300 bg-slate-900 border-2 border-yellow-400 winner-glow min-h-[300px]`
-                : `relative flex flex-col h-full rounded-2xl overflow-hidden transition-all duration-300 ${isDead ? 'opacity-50 grayscale' : ''} ${color} min-h-[300px]`;
+                ? `relative flex flex-col h-full rounded-2xl overflow-hidden transition-all duration-300 bg-slate-900 border-2 border-yellow-400 winner-glow min-h-[250px]`
+                : `relative flex flex-col h-full rounded-2xl overflow-hidden transition-all duration-300 ${isDead ? 'opacity-50 grayscale' : ''} ${color} min-h-[250px]`;
 
             return (
                 <div className={cardClasses}>
@@ -645,9 +656,14 @@
                     {isLocal && !showTools && !showCmdrSearch && (<div className="absolute top-4 right-4 z-50"><button onClick={toggleRotation} className="p-2 bg-black/40 hover:bg-black/60 rounded-full text-white/90 transition-colors shadow-lg border border-white/10"><Icons.RotateCcw className="w-4 h-4" /></button></div>)}
                     <div className={`relative z-10 flex flex-col h-full p-4 transition-transform duration-300 ${rotateClass} ${isSideways ? 'scale-90 justify-center gap-2' : ''}`}>
                         <div className={`flex justify-between items-start ${isSideways ? 'w-full' : ''}`}>
-                            <div className="flex flex-col items-start gap-1">
-                                <div className="text-xs font-bold text-purple-300 drop-shadow-md px-1 max-w-[140px] truncate">{name}</div>
-                                <button onClick={() => setShowCmdrSearch(true)} className="flex items-center gap-2 bg-black/20 hover:bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md transition-colors text-white group">{commander?.name ? (<span className="font-semibold text-sm truncate max-w-[120px]">{commander.name}</span>) : (<span className="flex items-center gap-1 text-xs uppercase tracking-wide font-bold opacity-80"><Icons.Search className="w-3 h-3"/> Commander</span>)}</button>
+                            <div className="flex flex-col items-start gap-1 max-w-[70%]">
+                                <div className="text-xs font-bold text-purple-300 drop-shadow-md px-1 truncate w-full">{name}</div>
+                                <button onClick={() => setShowCmdrSearch(true)} className="flex items-center gap-2 bg-black/20 hover:bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md transition-colors text-white group max-w-full">
+                                    <div className="flex flex-col items-start truncate">
+                                        {commander?.name ? (<span className="font-semibold text-sm truncate w-full">{commander.name}</span>) : (<span className="flex items-center gap-1 text-xs uppercase tracking-wide font-bold opacity-80"><Icons.Search className="w-3 h-3"/> Commander</span>)}
+                                        {partner?.name && <span className="text-[10px] text-purple-300 truncate w-full">+ {partner.name}</span>}
+                                    </div>
+                                </button>
                             </div>
                             <div className="flex items-center gap-2">{isLocal && <div className="w-8 h-8"></div>}{milled && <Icons.Book className="text-blue-400 w-5 h-5 drop-shadow-md" />}{isDead && <Icons.Skull className="text-red-500 w-6 h-6 animate-pulse" />}{isWinner && <Icons.Crown className="text-yellow-400 w-6 h-6 animate-bounce" />}</div>
                         </div>
@@ -659,28 +675,32 @@
                                     <div className="flex gap-2">{(poison > 0) && (<div className="flex items-center gap-1 text-green-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs"><Icons.Droplet className="w-3 h-3" /> {poison}/10</div>)}{milled && (<div className="flex items-center gap-1 text-blue-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs border border-blue-500/50"><Icons.Book className="w-3 h-3" /> Milled</div>)}</div>
                                     
                                     <div className="flex flex-wrap justify-center gap-1 mt-1 max-w-[120px] relative"> 
-                                        {Object.entries(commanderDamage).map(([sourceId, dmg]) => {
+                                        {Object.entries(commanderDamage).map(([key, dmg]) => {
                                             if (dmg <= 0) return null;
+                                            // Key is either opponentId or opponentId-partner
+                                            const isPartnerDmg = key.includes('-partner');
+                                            const sourceId = isPartnerDmg ? key.replace('-partner','') : key;
                                             const sourcePlayer = players.find(p => p.id == sourceId);
-                                            const tooltipText = sourcePlayer?.commander?.name 
-                                                ? `${sourcePlayer.commander.name} (${sourcePlayer.name})` 
-                                                : `${sourcePlayer?.name || 'Unknown Player'}`;
+                                            
+                                            let tooltipText = `${sourcePlayer?.name || 'Unknown'}`;
+                                            if (isPartnerDmg && sourcePlayer?.partner) tooltipText = `${sourcePlayer.partner.name} (${sourcePlayer.name})`;
+                                            else if (!isPartnerDmg && sourcePlayer?.commander) tooltipText = `${sourcePlayer.commander.name} (${sourcePlayer.name})`;
                                             
                                             return (
                                                 <div 
-                                                    key={sourceId} 
+                                                    key={key} 
                                                     className="relative"
-                                                    onMouseEnter={() => setActiveTooltip(sourceId)}
+                                                    onMouseEnter={() => setActiveTooltip(key)}
                                                     onMouseLeave={() => setActiveTooltip(null)}
-                                                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === sourceId ? null : sourceId); }}
+                                                    onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === key ? null : key); }}
                                                 >
-                                                    <div className="flex items-center gap-1 text-red-400 font-bold bg-black/50 px-2 py-0.5 rounded-full text-xs cursor-pointer border border-red-500/20">
+                                                    <div className={`flex items-center gap-1 font-bold bg-black/50 px-2 py-0.5 rounded-full text-xs cursor-pointer border ${isPartnerDmg ? 'text-orange-400 border-orange-500/20' : 'text-red-400 border-red-500/20'}`}>
                                                         <Icons.Sword className="w-3 h-3" /> {dmg}/21
                                                     </div>
                                                     {/* Custom Tooltip Popover */}
-                                                    {activeTooltip === sourceId && (
+                                                    {activeTooltip === key && (
                                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black text-white text-xs p-2 rounded-lg shadow-xl border border-red-500/50 z-50 text-center pointer-events-none animate-in fade-in zoom-in-95">
-                                                            <div className="font-bold text-red-300 mb-1">Damage Source</div>
+                                                            <div className="font-bold text-red-300 mb-1">{isPartnerDmg ? 'Partner Damage' : 'Commander Damage'}</div>
                                                             <div>{tooltipText}</div>
                                                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black border-b border-r border-red-500/50 transform rotate-45"></div>
                                                         </div>
@@ -699,16 +719,82 @@
                         </div>
                          {commander?.artist && (<div className="absolute bottom-1 right-2 text-[10px] text-white/40 font-medium pointer-events-none text-right leading-tight"><div>Art by {commander.artist}</div><div>™ & © Wizards of the Coast</div></div>)}
                     </div>
-                    {showCmdrSearch && <CardSearch onSelect={(c) => { onUpdate(id, { commander: c }); if(onLog) onLog(`${name} chose ${c.name}`); setShowCmdrSearch(false); }} onClose={() => setShowCmdrSearch(false)} mode="commander" />}
+                    {showCmdrSearch && <CardSearch 
+                        onSelect={(c, asPartner) => { 
+                            if (asPartner) onUpdate(id, { partner: c }); 
+                            else onUpdate(id, { commander: c });
+                            if(onLog) onLog(`${name} chose ${asPartner ? 'Partner ' + c.name : c.name}`); 
+                            setShowCmdrSearch(false); 
+                        }} 
+                        onClose={() => setShowCmdrSearch(false)} 
+                        mode="commander" 
+                    />}
                     {showTools && (
                         <div className={`absolute inset-0 bg-slate-900/95 z-20 flex flex-col p-4 transition-transform duration-300 ${rotateClass}`}>
                             <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2"><h3 className="text-white font-bold flex items-center gap-2"><Icons.Sliders className="w-4 h-4 text-purple-400"/> Damage & Counters</h3><button onClick={() => setShowTools(false)}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button></div>
                             <div className="flex-1 overflow-y-auto space-y-4">
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-green-400 flex items-center gap-2"><Icons.Droplet className="w-4 h-4"/> Poison (Infect)</span><span className="text-xs text-slate-500">Die at 10</span></div><div className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><button onClick={() => adjustPoison(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button><span className="font-mono text-xl text-white font-bold">{poison || 0}</span><button onClick={() => adjustPoison(1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button></div></div>
                                 
-                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-red-400 flex items-center gap-2"><Icons.Sword className="w-4 h-4"/> Commander Damage</span><span className="text-xs text-slate-500">Die at 21</span></div><div className="space-y-2">{players.filter(p => p.id !== id).map(opponent => { const dmg = commanderDamage[opponent.id] || 0; return (<div key={opponent.id} className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><div className="flex items-center gap-2 overflow-hidden mr-2"><div className={`w-2 h-8 rounded-full ${opponent.id === id ? 'bg-purple-500' : 'bg-slate-600'}`}></div><div className="flex flex-col truncate"><span className="text-xs font-bold text-white truncate">{opponent.commander?.name || opponent.name}</span><span className="text-[10px] text-slate-500 uppercase">From {opponent.name}</span></div></div><div className="flex items-center gap-3 shrink-0"><button onClick={() => adjustCmdrDamage(opponent.id, -1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button><span className={`font-mono text-lg font-bold w-6 text-center ${dmg >= 21 ? 'text-red-500' : 'text-white'}`}>{dmg}</span><button onClick={() => adjustCmdrDamage(opponent.id, 1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button></div></div>);})}</div></div>
+                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-red-400 flex items-center gap-2"><Icons.Sword className="w-4 h-4"/> Commander Damage</span><span className="text-xs text-slate-500">Die at 21 per Cmdr</span></div><div className="space-y-2">
+                                    {players.filter(p => p.id !== id).map(opponent => { 
+                                        const dmgMain = commanderDamage[opponent.id] || 0; 
+                                        const dmgPartner = commanderDamage[`${opponent.id}-partner`] || 0;
+                                        
+                                        return (
+                                            <div key={opponent.id} className="flex flex-col gap-2 bg-slate-900 rounded-lg p-2">
+                                                 {/* Main Commander */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                                        <div className={`w-2 h-8 rounded-full ${opponent.id === id ? 'bg-purple-500' : 'bg-slate-600'}`}></div>
+                                                        <div className="flex flex-col truncate">
+                                                            <span className="text-xs font-bold text-white truncate">{opponent.commander?.name || opponent.name}</span>
+                                                            <span className="text-[10px] text-slate-500 uppercase">From {opponent.name}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <button onClick={() => adjustCmdrDamage(opponent.id, -1, opponent.commander?.name || opponent.name)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button>
+                                                        <span className={`font-mono text-lg font-bold w-6 text-center ${dmgMain >= 21 ? 'text-red-500' : 'text-white'}`}>{dmgMain}</span>
+                                                        <button onClick={() => adjustCmdrDamage(opponent.id, 1, opponent.commander?.name || opponent.name)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Partner Commander (if exists) */}
+                                                {opponent.partner && (
+                                                    <div className="flex items-center justify-between border-t border-slate-800 pt-2">
+                                                        <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                                            <div className="w-2 h-8 rounded-full bg-orange-500/50"></div>
+                                                            <div className="flex flex-col truncate">
+                                                                <span className="text-xs font-bold text-orange-200 truncate">{opponent.partner.name}</span>
+                                                                <span className="text-[10px] text-slate-500 uppercase">Partner</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            <button onClick={() => adjustCmdrDamage(`${opponent.id}-partner`, -1, opponent.partner.name)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button>
+                                                            <span className={`font-mono text-lg font-bold w-6 text-center ${dmgPartner >= 21 ? 'text-red-500' : 'text-white'}`}>{dmgPartner}</span>
+                                                            <button onClick={() => adjustCmdrDamage(`${opponent.id}-partner`, 1, opponent.partner.name)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div></div>
                                 
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-blue-400 flex items-center gap-2"><Icons.Book className="w-4 h-4"/> Library (Mill)</span><span className="text-xs text-slate-500">Die if Milled</span></div><div className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><span className="text-sm text-slate-300 ml-2">Milled Out?</span><button onClick={toggleMilled} className={`px-4 py-2 rounded-lg font-bold transition-colors ${milled ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{milled ? "YES (Dead)" : "NO"}</button></div></div>
+                                
+                                {/* KICK PLAYER BUTTON FOR HOST */}
+                                {canKick && (
+                                    <div className="mt-4 pt-4 border-t border-slate-700">
+                                        <button 
+                                            onClick={() => { if(confirmKick) onKick(id); else setConfirmKick(true); }} 
+                                            className={`w-full py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 ${confirmKick ? 'bg-red-600 text-white animate-pulse' : 'bg-red-900/50 border border-red-700 text-red-200 hover:bg-red-800'}`}
+                                            onMouseLeave={() => setConfirmKick(false)}
+                                        >
+                                            <Icons.LogOut className="w-4 h-4" /> 
+                                            {confirmKick ? "Confirm Kick?" : "Kick Player"}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -718,7 +804,7 @@
 
         // 7. Contact Page (Unchanged)
         const ContactPage = () => (
-             <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500 scroll-container overflow-y-auto pb-24">
                 <div className="bg-slate-900/50 backdrop-blur-lg p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full">
                     <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-6"><Icons.Mail className="w-8 h-8 text-purple-500" /></div>
                     <h1 className="text-3xl font-bold text-white mb-2">Get in Touch</h1>
@@ -877,6 +963,7 @@
                         name: playerName, 
                         life: 40, 
                         commander: null, 
+                        partner: null,
                         isDead: false, 
                         poison: 0, 
                         commanderDamage: {}, 
@@ -969,6 +1056,20 @@
                 }
             };
 
+            // NEW: Kick Player Function
+            const handleKickPlayer = async (playerIdToKick) => {
+                if (!joinedRoom || !isHost) return;
+                try {
+                    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
+                    const currentList = playersRef.current;
+                    const remainingPlayers = currentList.filter(p => p.id !== playerIdToKick);
+                    await updateDoc(roomRef, { players: remainingPlayers });
+                    await updateDoc(roomRef, { messages: arrayUnion({sender: "System", text: "A player was kicked from the room.", timestamp: Date.now()}) });
+                } catch(e) {
+                    console.error("Error kicking player:", e);
+                }
+            };
+
             // --- FIX 1 (Cont): Listener ONLY listens ---
             useEffect(() => {
                 if (!joinedRoom || !user) return;
@@ -1043,9 +1144,15 @@
 
                 await updateDoc(roomRef, { players: newPlayers, lastActivity: serverTimestamp() });
                 if (updates.commander && joinedRoom !== "Test") updateCommanderStat(updates.commander);
+                if (updates.partner && joinedRoom !== "Test") updateCommanderStat(updates.partner);
             };
 
             const isHost = players.length > 0 && players[0].id === user.uid;
+
+            // --- WINNER LOGIC RESTORED ---
+            const activePlayers = players.filter(p => !p.isDead);
+            // Winner condition: Only 1 active player left, and there were originally >1 players.
+            const winnerId = (activePlayers.length === 1 && players.length > 1) ? activePlayers[0].id : null;
 
             // Heartbeat
             useEffect(() => {
@@ -1057,28 +1164,7 @@
                 return () => clearInterval(interval);
             }, [joinedRoom]); // Only restart if room changes
 
-            // Reaper
-            useEffect(() => {
-                if (!joinedRoom || !isHost) return;
-                const interval = setInterval(() => {
-                    const now = Date.now();
-                    const currentList = playersRef.current;
-                    const validPlayers = currentList.filter(p => {
-                        const lastBeat = p.lastHeartbeat || now; 
-                        return (now - lastBeat) < 15000; 
-                    });
-
-                    if (validPlayers.length !== currentList.length) {
-                        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
-                        if (validPlayers.length === 0) {
-                            deleteDoc(roomRef);
-                        } else {
-                            updateDoc(roomRef, { players: validPlayers });
-                        }
-                    }
-                }, 10000);
-                return () => clearInterval(interval);
-            }, [joinedRoom, isHost]); // Depend on isHost to start/stop reaper
+            // Reaper Logic REMOVED per user request
 
             if (joinedRoom) {
                 return (
@@ -1143,7 +1229,7 @@
                             </div>
                         </div>
                         {/* --- FIX 2: Mobile Scrolling Classes --- */}
-                        <div className="flex-1 overflow-y-auto p-4 scroll-container">
+                        <div className="absolute inset-0 top-16 flex flex-col p-4 scroll-container overflow-y-auto pb-24">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr h-full min-h-[500px]">
                                 {players.map(p => (
                                     <PlayerCard 
@@ -1151,7 +1237,12 @@
                                         {...p} 
                                         players={players} 
                                         isLocal={false}
+                                        // --- WINNER PROP RESTORED ---
+                                        isWinner={p.id === winnerId}
                                         color={p.id === user.uid ? 'bg-slate-800 ring-2 ring-purple-500' : 'bg-slate-800'} 
+                                        // Pass Kick Props
+                                        canKick={isHost && p.id !== user.uid}
+                                        onKick={() => handleKickPlayer(p.id)}
                                         onUpdate={(id, updates) => { if (id === user.uid) updateSelf(updates); }} 
                                         onDead={(id) => { if (id === user.uid) updateSelf({ isDead: true }); }} 
                                         onLog={addLogEntry}
@@ -1164,7 +1255,7 @@
             }
 
             return (
-                <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto relative scroll-container">
+                <div className="absolute inset-0 flex flex-col p-4 md:p-8 overflow-y-auto scroll-container pb-24">
                     <button onClick={() => setShowCardSearch(true)} className="absolute top-4 right-4 md:right-8 bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600 transition-colors z-20 flex items-center gap-2 px-4">
                         <Icons.Search className="w-4 h-4 text-purple-400" />
                         <span className="text-sm font-bold">Card Database</span>
@@ -1248,16 +1339,24 @@
 
         // 9. Changelog
         const Changelog = () => (
-            <div className="p-8 max-w-3xl mx-auto text-slate-300 space-y-8 h-full overflow-y-auto scroll-container">
+            <div className="absolute inset-0 p-8 max-w-3xl mx-auto text-slate-300 space-y-8 h-full overflow-y-auto scroll-container pb-24">
                 <h1 className="text-3xl font-bold text-white mb-8">Patch Notes</h1>
                 <div className="relative pl-8 border-l-2 border-slate-700">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-slate-900" />
-                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.23.0 - Ghost Fix</div>
-                    <h3 className="text-xl font-bold text-white mb-2">Multiplayer Stability</h3>
+                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.24.1 - Admin Power</div>
+                    <h3 className="text-xl font-bold text-white mb-2">Room Management</h3>
                     <ul className="list-disc pl-4 space-y-2 text-slate-400">
-                        <li><strong className="text-slate-200">No More Ghosts:</strong> Fixed a major bug where players would persist on screen after leaving.</li>
-                        <li><strong className="text-slate-200">Life Total Fix:</strong> Fixed a race condition where life totals would revert to 40 automatically.</li>
-                        <li><strong className="text-slate-200">Mobile Scrolling:</strong> Improved scrolling performance on Android Chrome.</li>
+                        <li><strong className="text-slate-200">No More Timeouts:</strong> Automatic removal for inactivity has been disabled. Players stay until they leave.</li>
+                        <li><strong className="text-slate-200">Kick Feature:</strong> The Room Host can now manually remove players via the Tools (wrench) menu on a player's card.</li>
+                    </ul>
+                </div>
+                <div className="relative pl-8 border-l-2 border-slate-700">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-700 ring-4 ring-slate-900" />
+                    <div className="mb-1 text-slate-500 font-mono text-sm">v2.24.0 - Partners!</div>
+                    <h3 className="text-xl font-bold text-white mb-2">Partner Commanders</h3>
+                    <ul className="list-disc pl-4 space-y-2 text-slate-400">
+                        <li><strong className="text-slate-200">Added Partners:</strong> You can now check "Add as Partner" when searching for a commander to add a second commander to your board.</li>
+                        <li><strong className="text-slate-200">Damage Tracking:</strong> Opponents with partners now show two separate commander damage counters in the tools menu.</li>
                     </ul>
                 </div>
             </div>
@@ -1432,7 +1531,7 @@
                                         <LocalSetup onStart={startLocalGame} />
                                     ) : (
                                         <div className="relative h-full w-full">
-                                            <div className={`absolute inset-0 grid gap-1 p-1 md:p-4 overflow-y-auto min-h-full ${
+                                            <div className={`absolute inset-0 grid gap-2 p-2 pt-16 pb-20 overflow-y-auto scroll-container ${
                                                 localPlayers.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' : 
                                                 localPlayers.length <= 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' : 
                                                 'grid-cols-2 lg:grid-cols-3'
@@ -1504,7 +1603,15 @@
                             {/* Global/Local Modals for Local View */}
                             {view === 'local' && !isLocalSetup && showToolsModal && <GameToolsModal players={localPlayers} onClose={() => setShowToolsModal(false)} />}
                             {view === 'local' && !isLocalSetup && showHistoryModal && <HistoryModal log={localLog} onClose={() => setShowHistoryModal(false)} />}
-                            {view === 'local' && showCardSearch && <CardSearch onSelect={(card) => { setViewingCard(card); setShowCardSearch(false); }} onClose={() => setShowCardSearch(false)} mode="any" />}
+                            {view === 'local' && showCardSearch && <CardSearch 
+                                onSelect={(card, asPartner) => { 
+                                    setViewingCard(card); 
+                                    // Local game partner logic isn't fully wired here, but card search works for general browsing
+                                    setShowCardSearch(false); 
+                                }} 
+                                onClose={() => setShowCardSearch(false)} 
+                                mode="any" 
+                            />}
                             {view === 'local' && viewingCard && <CardDetailModal card={viewingCard} onClose={() => setViewingCard(null)} />}
                         </main>
                     </div>
