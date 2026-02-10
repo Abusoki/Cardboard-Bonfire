@@ -1094,10 +1094,10 @@
                 } catch (e) { setError(e.message); }
             };
 
-            const sendMessage = async (customText = null) => {
+            const sendMessage = async (customText = null, cardData = null) => {
                 const textToSend = customText || chatInput.trim();
                 if (!textToSend) return;
-                const msg = { sender: playerName, text: textToSend, timestamp: Date.now() };
+                const msg = { sender: playerName, text: textToSend, timestamp: Date.now(), card: cardData };
                 const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
                 await updateDoc(roomRef, { messages: arrayUnion(msg) });
                 if (!customText) setChatInput('');
@@ -1156,6 +1156,48 @@
             };
 
             // --- FIX 1 (Cont): Listener ONLY listens ---
+            const ChatMessage = ({ msg, isMyMsg }) => {
+                const [showTooltip, setShowTooltip] = useState(false);
+
+                // If message has card data, we render differently
+                if (msg.card) {
+                    const parts = msg.text.split(`[${msg.card.name}]`);
+                    if (parts.length === 2) {
+                        return (
+                            <div className={`flex flex-col ${isMyMsg ? 'items-end' : 'items-start'}`}>
+                                <div className="text-[10px] text-slate-500 px-1 mb-0.5">{msg.sender}</div>
+                                <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words relative overflow-visible ${isMyMsg ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                                    <span>{parts[0]}</span>
+                                    <span
+                                        className="font-bold underline decoration-dotted cursor-help relative inline-block text-purple-200 hover:text-white"
+                                        onMouseEnter={() => setShowTooltip(true)}
+                                        onMouseLeave={() => setShowTooltip(false)}
+                                        onClick={(e) => { e.stopPropagation(); setShowTooltip(!showTooltip); }}
+                                    >
+                                        {msg.card.name}
+                                        {showTooltip && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-xl shadow-2xl border-2 border-slate-600/50 z-50 animate-in fade-in zoom-in-95 pointer-events-none bg-slate-900 overflow-hidden">
+                                                <img src={msg.card.image} alt={msg.card.name} className="w-full h-auto object-cover" />
+                                            </div>
+                                        )}
+                                    </span>
+                                    <span>{parts[1]}</span>
+                                </div>
+                            </div>
+                        );
+                    }
+                }
+
+                return (
+                    <div className={`flex flex-col ${isMyMsg ? 'items-end' : 'items-start'}`}>
+                        <div className="text-[10px] text-slate-500 px-1 mb-0.5">{msg.sender}</div>
+                        <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words ${isMyMsg ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                            {msg.text}
+                        </div>
+                    </div>
+                );
+            };
+
             useEffect(() => {
                 if (!joinedRoom || !user) return;
                 const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
@@ -1284,14 +1326,16 @@
                                 <div className="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-800 rounded-t-xl"><span className="font-bold text-white text-sm">Room Chat</span><button onClick={() => setShowChat(false)}><Icons.X className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
                                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                                     {messages.length === 0 && <div className="text-center text-xs text-slate-600 py-4">No messages yet.</div>}
-                                    {messages.map((m, i) => (<div key={i} className={`flex flex-col ${m.sender === playerName ? 'items-end' : 'items-start'}`}><div className="text-[10px] text-slate-500 px-1 mb-0.5">{m.sender}</div><div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words ${m.sender === playerName ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>{m.text}</div></div>))}
+                                    {messages.map((m, i) => (
+                                        <ChatMessage key={i} msg={m} isMyMsg={m.sender === playerName} />
+                                    ))}
                                     <div ref={chatEndRef} />
                                 </div>
                                 <div className="p-2 border-t border-slate-700 bg-slate-800 rounded-b-xl flex gap-2"><input className="flex-1 bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500" placeholder="Type a message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} /><button onClick={sendMessage} className="p-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white"><Icons.Send className="w-4 h-4" /></button></div>
                             </div>
                         )}
 
-                        {showCardSearch && <CardSearch onSelect={(card) => { setViewingCard(card); setShowCardSearch(false); sendMessage(`I found [${card.name}]`); }} onClose={() => setShowCardSearch(false)} mode="any" />}
+                        {showCardSearch && <CardSearch onSelect={(card) => { setViewingCard(card); setShowCardSearch(false); sendMessage(`I found [${card.name}]`, card); }} onClose={() => setShowCardSearch(false)} mode="any" />}
                         {viewingCard && <CardDetailModal card={viewingCard} onClose={() => setViewingCard(null)} />}
                         {showCopiedToast && (<div className="absolute top-16 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg z-50 animate-bounce">Link Copied!</div>)}
 
