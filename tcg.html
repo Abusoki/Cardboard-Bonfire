@@ -1156,7 +1156,7 @@
             };
 
             // --- FIX 1 (Cont): Listener ONLY listens ---
-            const ChatMessage = ({ msg, isMyMsg }) => {
+            const ChatMessage = ({ msg, isMyMsg, onViewCard }) => {
                 const [showTooltip, setShowTooltip] = useState(false);
 
                 // If message has card data, we render differently
@@ -1169,10 +1169,10 @@
                                 <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words relative overflow-visible ${isMyMsg ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
                                     <span>{parts[0]}</span>
                                     <span
-                                        className="font-bold underline decoration-dotted cursor-help relative inline-block text-purple-200 hover:text-white"
+                                        className="font-bold underline decoration-dotted cursor-pointer relative inline-block text-purple-200 hover:text-white"
                                         onMouseEnter={() => setShowTooltip(true)}
                                         onMouseLeave={() => setShowTooltip(false)}
-                                        onClick={(e) => { e.stopPropagation(); setShowTooltip(!showTooltip); }}
+                                        onClick={(e) => { e.stopPropagation(); setShowTooltip(false); onViewCard(msg.card); }}
                                     >
                                         {msg.card.name}
                                         {showTooltip && (
@@ -1327,7 +1327,7 @@
                                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                                     {messages.length === 0 && <div className="text-center text-xs text-slate-600 py-4">No messages yet.</div>}
                                     {messages.map((m, i) => (
-                                        <ChatMessage key={i} msg={m} isMyMsg={m.sender === playerName} />
+                                        <ChatMessage key={i} msg={m} isMyMsg={m.sender === playerName} onViewCard={setViewingCard} />
                                     ))}
                                     <div ref={chatEndRef} />
                                 </div>
