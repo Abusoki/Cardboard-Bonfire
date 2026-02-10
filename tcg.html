@@ -106,7 +106,7 @@
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, setDoc, getDoc, increment, serverTimestamp, deleteDoc, runTransaction, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, setDoc, getDoc, increment, serverTimestamp, deleteDoc, runTransaction, writeBatch, deleteField, arrayRemove, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
         const { useState, useEffect, useRef, useMemo } = React;
@@ -149,7 +149,7 @@
             FileText: (p) => <Icon {...p} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></>} />,
             Mail: (p) => <Icon {...p} path={<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></>} />,
             Sliders: (p) => <Icon {...p} path={<><line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" /><line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" /><line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" /><line x1="1" x2="7" y1="14" y2="14" /><line x1="9" x2="15" y1="8" y2="8" /><line x1="17" x2="23" y1="16" y2="16" /></>} />,
-            Sword: (p) => <Icon {...p} path={<><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y1="19" /></>} />,
+            Sword: (p) => <Icon {...p} path={<><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y2="19" /></>} />,
             Droplet: (p) => <Icon {...p} path={<path d="M12 22a7 7 0 0 0 7-7c0-2-2-3-2-3L12 2 7 12s-2 1-2 3a7 7 0 0 0 7 7z" />} />,
             RotateCw: (p) => <Icon {...p} path={<><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></>} />,
             Lock: (p) => <Icon {...p} path={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>} />,
@@ -247,6 +247,31 @@
                 },
                 lastActive: serverTimestamp()
             }, { merge: true });
+        };
+
+        // --- Social Helpers ---
+        const followUser = async (currentUid, targetUid) => {
+            if (!currentUid || !targetUid || currentUid === targetUid) return;
+            const batch = writeBatch(db);
+            const currentUserRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUid);
+            const targetUserRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', targetUid);
+
+            batch.set(currentUserRef, { following: arrayUnion(targetUid) }, { merge: true });
+            batch.set(targetUserRef, { followers: arrayUnion(currentUid) }, { merge: true });
+            await batch.commit();
+        };
+
+        const unfollowUser = async (currentUid, targetUid) => {
+            if (!currentUid || !targetUid) return;
+            const batch = writeBatch(db);
+            const currentUserRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUid);
+            const targetUserRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', targetUid);
+
+            // Note: arrayRemove is valid in set with merge too, but technically update is cleaner if doc exists. 
+            // We assume docs exist for registered users.
+            batch.update(currentUserRef, { following: arrayRemove(targetUid) });
+            batch.update(targetUserRef, { followers: arrayRemove(currentUid) });
+            await batch.commit();
         };
 
         // --- MTG Color Identities ---
@@ -736,14 +761,15 @@
             );
         };
 
-        // 5. Stats Page (Unchanged)
+        // 5. Stats Page
         const StatsPage = ({ user }) => {
-            const [stats, setStats] = useState({ topCommanders: [], topCommander: null, deathStats: null });
+            const [stats, setStats] = useState({ topCommanders: [], topCommander: null, deathStats: null, leaderboard: [] });
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
                 if (!user) return;
 
+                // Existing Lookups
                 const commandersRef = collection(db, 'artifacts', appId, 'public', 'data', 'commander_stats');
                 const unsubscribeCommanders = onSnapshot(commandersRef, (snapshot) => {
                     const commanders = [];
@@ -759,103 +785,129 @@
 
                 const deathStatsRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_stats', 'deaths');
                 const unsubscribeDeaths = onSnapshot(deathStatsRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setStats(prev => ({ ...prev, deathStats: docSnap.data() }));
-                    }
+                    setStats(prev => ({ ...prev, deathStats: docSnap.data() }));
                 });
 
-                setLoading(false);
-                return () => { unsubscribeCommanders(); unsubscribeDeaths(); };
+                // Leaderboard Lookup
+                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+                const q = query(usersRef, orderBy('stats.gamesPlayed', 'desc'), limit(3));
+                const unsubscribeLeaderboard = onSnapshot(q, (snapshot) => {
+                    const leaders = [];
+                    snapshot.forEach(doc => leaders.push({ id: doc.id, ...doc.data() }));
+                    setStats(prev => ({ ...prev, leaderboard: leaders }));
+                    if (loading) setLoading(false);
+                });
+
+                return () => { unsubscribeCommanders(); unsubscribeDeaths(); unsubscribeLeaderboard(); };
             }, [user]);
 
-            if (loading) return <div className="flex items-center justify-center h-full text-slate-400">Loading Stats...</div>;
+            if (loading) return <div className="flex items-center justify-center h-full text-slate-500">Loading Stats...</div>;
 
             return (
-                <div className="absolute inset-0 flex flex-col p-4 md:p-8 overflow-y-auto scroll-container pb-24">
-                    <h1 className="text-3xl font-bold text-white mb-8 flex items-center gap-3">
-                        <Icons.BarChart2 className="w-8 h-8 text-purple-500" />
-                        Meta Statistics
-                    </h1>
+                <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3"><Icons.BarChart2 className="w-8 h-8 text-purple-500" /> Global Stats</h1>
 
-                    {stats.deathStats && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                                <Icons.Skull className="w-6 h-6 text-red-500 mb-2" />
-                                <div className="text-2xl font-bold text-white">{stats.deathStats.standard || 0}</div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider">Combat/Life</div>
-                            </div>
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                                <Icons.Sword className="w-6 h-6 text-orange-500 mb-2" />
-                                <div className="text-2xl font-bold text-white">{stats.deathStats.commander || 0}</div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider">Commander Dmg</div>
-                            </div>
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                                <Icons.Droplet className="w-6 h-6 text-green-500 mb-2" />
-                                <div className="text-2xl font-bold text-white">{stats.deathStats.poison || 0}</div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider">Poison</div>
-                            </div>
-                            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
-                                <Icons.Book className="w-6 h-6 text-blue-500 mb-2" />
-                                <div className="text-2xl font-bold text-white">{stats.deathStats.milled || 0}</div>
-                                <div className="text-xs text-slate-500 uppercase tracking-wider">Milled Out</div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-                            <h2 className="text-xl font-semibold text-purple-300 mb-6 flex items-center justify-between">
-                                <span>Top 5 Commanders</span>
-                                <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-1 rounded-full">All Time</span>
-                            </h2>
-                            <div className="space-y-4">
-                                {stats.topCommanders.length === 0 ? (
-                                    <div className="text-slate-500 text-center py-10">No stats recorded yet. Play a game!</div>
-                                ) : (
-                                    stats.topCommanders.map((cmd, index) => (
-                                        <div key={cmd.name} className="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all border border-transparent hover:border-purple-500/30 group">
-                                            <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-slate-400 text-black' : index === 2 ? 'bg-orange-700 text-white' : 'bg-slate-700 text-slate-400'}`}>{index + 1}</div>
-                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-black shrink-0">
-                                                <img src={cmd.image} alt={cmd.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="text-white font-medium truncate">{cmd.name}</div>
-                                                <div className="text-xs text-slate-400">{cmd.count} plays</div>
-                                            </div>
-                                            {index === 0 && <Icons.Crown className="w-5 h-5 text-yellow-500" />}
+                        {/* Leaderboard */}
+                        <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700 backdrop-blur-sm">
+                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icons.Crown className="w-5 h-5 text-yellow-400" /> Most Dedicated Players</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {stats.leaderboard.map((player, i) => (
+                                    <div key={player.id} className={`p-4 rounded-xl border flex items-center gap-4 relative overflow-hidden ${i === 0 ? 'bg-yellow-900/20 border-yellow-500/50' : i === 1 ? 'bg-slate-800 border-slate-600' : 'bg-slate-900 border-slate-700'}`}>
+                                        <div className={`text-4xl font-black opacity-20 absolute right-2 top-0 pointer-events-none ${i === 0 ? 'text-yellow-500' : 'text-slate-500'}`}>#{i + 1}</div>
+                                        <div className="w-12 h-12 rounded-full border border-slate-600 bg-slate-800 flex items-center justify-center shrink-0">
+                                            {player.favoriteCommander ? <img src={player.favoriteCommander.image} className="w-full h-full rounded-full object-cover" /> : <Icons.User className="w-6 h-6 text-slate-500" />}
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                        <div className="relative group rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-900 min-h-[400px] flex items-center justify-center bg-slate-900">
-                            {stats.topCommander ? (
-                                <>
-                                    <img src={stats.topCommander.image} alt={stats.topCommander.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90"></div>
-                                    <div className="absolute bottom-0 left-0 right-0 p-8">
-                                        <div className="flex items-center gap-2 text-yellow-500 mb-2 font-bold tracking-wider text-sm uppercase">
-                                            <Icons.Crown className="w-4 h-4" />
-                                            Most Popular Commander
-                                        </div>
-                                        <h2 className="text-4xl md:text-5xl font-black text-white leading-tight drop-shadow-lg">{stats.topCommander.name}</h2>
-                                        <div className="mt-4 inline-flex items-center gap-2 bg-purple-600/90 text-white px-4 py-2 rounded-full backdrop-blur-md font-medium shadow-lg">
-                                            {stats.topCommander.count} Total Picks
+                                        <div>
+                                            <div className="font-bold text-white truncate max-w-[150px]">{player.displayName || 'Anonymous'}</div>
+                                            <div className="text-xs text-slate-400 font-bold uppercase">{player.stats?.gamesPlayed || 0} Games</div>
                                         </div>
                                     </div>
-                                    {stats.topCommander.artist && (
-                                        <div className="absolute bottom-2 right-2 text-[10px] text-white/40 font-medium text-right leading-tight z-10">
-                                            <div>Art by {stats.topCommander.artist}</div>
-                                            <div>™ & © Wizards of the Coast</div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
-                                    <Icons.Shield className="w-20 h-20 opacity-20" />
-                                    <p>Play games to reveal the top commander!</p>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Top Commanders (Existing) */}
+                        {stats.deathStats && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                    <Icons.Skull className="w-6 h-6 text-red-500 mb-2" />
+                                    <div className="text-2xl font-bold text-white">{stats.deathStats.standard || 0}</div>
+                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Combat/Life</div>
                                 </div>
-                            )}
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                    <Icons.Sword className="w-6 h-6 text-orange-500 mb-2" />
+                                    <div className="text-2xl font-bold text-white">{stats.deathStats.commander || 0}</div>
+                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Commander Dmg</div>
+                                </div>
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                    <Icons.Droplet className="w-6 h-6 text-green-500 mb-2" />
+                                    <div className="text-2xl font-bold text-white">{stats.deathStats.poison || 0}</div>
+                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Poison</div>
+                                </div>
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                    <Icons.Book className="w-6 h-6 text-blue-500 mb-2" />
+                                    <div className="text-2xl font-bold text-white">{stats.deathStats.milled || 0}</div>
+                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Milled Out</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                            <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
+                                <h2 className="text-xl font-semibold text-purple-300 mb-6 flex items-center justify-between">
+                                    <span>Top 5 Commanders</span>
+                                    <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-1 rounded-full">All Time</span>
+                                </h2>
+                                <div className="space-y-4">
+                                    {stats.topCommanders.length === 0 ? (
+                                        <div className="text-slate-500 text-center py-10">No stats recorded yet. Play a game!</div>
+                                    ) : (
+                                        stats.topCommanders.map((cmd, index) => (
+                                            <div key={cmd.name} className="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all border border-transparent hover:border-purple-500/30 group">
+                                                <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-slate-400 text-black' : index === 2 ? 'bg-orange-700 text-white' : 'bg-slate-700 text-slate-400'}`}>{index + 1}</div>
+                                                <div className="w-12 h-12 rounded-full overflow-hidden bg-black shrink-0">
+                                                    <img src={cmd.image} alt={cmd.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-white font-medium truncate">{cmd.name}</div>
+                                                    <div className="text-xs text-slate-400">{cmd.count} plays</div>
+                                                </div>
+                                                {index === 0 && <Icons.Crown className="w-5 h-5 text-yellow-500" />}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                            <div className="relative group rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-900 min-h-[400px] flex items-center justify-center bg-slate-900">
+                                {stats.topCommander ? (
+                                    <>
+                                        <img src={stats.topCommander.image} alt={stats.topCommander.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90"></div>
+                                        <div className="absolute bottom-0 left-0 right-0 p-8">
+                                            <div className="flex items-center gap-2 text-yellow-500 mb-2 font-bold tracking-wider text-sm uppercase">
+                                                <Icons.Crown className="w-4 h-4" />
+                                                Most Popular Commander
+                                            </div>
+                                            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight drop-shadow-lg">{stats.topCommander.name}</h2>
+                                            <div className="mt-4 inline-flex items-center gap-2 bg-purple-600/90 text-white px-4 py-2 rounded-full backdrop-blur-md font-medium shadow-lg">
+                                                {stats.topCommander.count} Total Picks
+                                            </div>
+                                        </div>
+                                        {stats.topCommander.artist && (
+                                            <div className="absolute bottom-2 right-2 text-[10px] text-white/40 font-medium text-right leading-tight z-10">
+                                                <div>Art by {stats.topCommander.artist}</div>
+                                                <div>™ & © Wizards of the Coast</div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-slate-600 gap-4">
+                                        <Icons.Shield className="w-20 h-20 opacity-20" />
+                                        <p>Play games to reveal the top commander!</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -863,12 +915,13 @@
         };
 
         // 6. Player Card (Updated for Partner & Kick)
-        const PlayerCard = ({ id, name, life, commander, partner, color, poison = 0, commanderDamage = {}, milled = false, onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog, canKick, onKick }) => {
+        const PlayerCard = ({ id, name, life, commander, partner, color, poison = 0, commanderDamage = {}, milled = false, onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog, canKick, onKick, playerId }) => {
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
             const [showTools, setShowTools] = useState(false);
             const [rotation, setRotation] = useState(0);
             const [activeTooltip, setActiveTooltip] = useState(null);
             const [confirmKick, setConfirmKick] = useState(false);
+            const [showKick, setShowKick] = useState(false); // For online room kick button
 
             const pushToLog = (msg) => { if (onLog) onLog(msg); };
             const lifeChangeRef = useRef(0);
@@ -936,7 +989,12 @@
                     <div className={`relative z-10 flex flex-col h-full p-4 transition-transform duration-300 ${rotateClass} ${isSideways ? 'scale-90 justify-center gap-2' : ''}`}>
                         <div className={`flex justify-between items-start ${isSideways ? 'w-full' : ''}`}>
                             <div className="flex flex-col items-start gap-1 max-w-[70%]">
-                                <div className="text-xs font-bold text-purple-300 drop-shadow-md px-1 truncate w-full">{name}</div>
+                                <div className="flex items-center gap-2">
+                                    <span onClick={() => { if (playerId && window.setViewProfile) window.setViewProfile(playerId); }} className="font-bold text-white text-sm bg-black/40 px-3 py-1 rounded-full backdrop-blur-md cursor-pointer hover:bg-black/60 hover:text-purple-300 transition-colors">{name}</span>
+                                    {canKick && showKick && (
+                                        <button onClick={() => onKick(id)} className="text-red-500/50 hover:text-red-500 transition-colors p-1"><Icons.LogOut className="w-3 h-3" /></button>
+                                    )}
+                                </div>
                                 <button onClick={() => setShowCmdrSearch(true)} className="flex items-center gap-2 bg-black/20 hover:bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md transition-colors text-white group max-w-full">
                                     <div className="flex flex-col items-start truncate">
                                         {commander?.name ? (<span className="font-semibold text-sm truncate w-full">{commander.name}</span>) : (<span className="flex items-center gap-1 text-xs uppercase tracking-wide font-bold opacity-80"><Icons.Search className="w-3 h-3" /> Commander</span>)}
@@ -1094,41 +1152,48 @@
         );
 
         // 8. Profile Page
-        const ProfilePage = ({ user }) => {
+        const ProfilePage = ({ user, viewUserUid = null, onBack = null }) => {
             const [profile, setProfile] = useState(null);
             const [loading, setLoading] = useState(true);
             const [editing, setEditing] = useState(false);
-            const [formData, setFormData] = useState({ displayName: '', favoriteColor: 'Colorless' }); // Changed default
+            const [formData, setFormData] = useState({ displayName: '', favoriteColor: 'Colorless' });
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
+            const [isFollowing, setIsFollowing] = useState(false);
+            const isOwnProfile = !viewUserUid || (user && user.uid === viewUserUid);
+            const targetUid = viewUserUid || user?.uid;
 
             useEffect(() => {
-                if (!user) return;
+                if (!targetUid) return;
                 const load = async () => {
-                    const data = await getUserProfile(user.uid);
+                    const data = await getUserProfile(targetUid);
                     if (data) {
                         setProfile(data);
-                        setFormData({
-                            displayName: data.displayName || '',
-                            favoriteColor: data.favoriteColor || 'Colorless'
-                        });
-                    } else if (user.displayName) {
-                        // Pre-fill from Auth if available
-                        setFormData(prev => ({ ...prev, displayName: user.displayName }));
+                        if (isOwnProfile) {
+                            setFormData({
+                                displayName: data.displayName || '',
+                                favoriteColor: data.favoriteColor || 'Colorless'
+                            });
+                        }
+                        // Check follow status
+                        if (!isOwnProfile && user) {
+                            // We need to check current logged in user's following list
+                            // Ideally we subscribe to current user doc in App, but here we can just do a quick check
+                            const currentUserDoc = await getUserProfile(user.uid);
+                            if (currentUserDoc && currentUserDoc.following && currentUserDoc.following.includes(targetUid)) {
+                                setIsFollowing(true);
+                            }
+                        }
+                    } else if (isOwnProfile && user) {
+                        if (user.displayName) setFormData(prev => ({ ...prev, displayName: user.displayName }));
                     }
                     setLoading(false);
                 };
                 load();
-            }, [user]);
+            }, [targetUid, user, isOwnProfile]);
 
             const handleSave = async () => {
-                if (!user) return;
+                if (!user || !isOwnProfile) return;
                 try {
-                    // Update Auth Profile if changed
-                    if (user.displayName !== formData.displayName) {
-                        // Note: updateProfile is from auth SDK, we need to handle it safely 
-                        // but for this simplified app we'll focus on Firestore
-                    }
-
                     await updateUserProfile(user.uid, formData);
                     setProfile({ ...profile, ...formData });
                     setEditing(false);
@@ -1139,9 +1204,24 @@
             };
 
             const handleLogout = async () => {
+                try { await signOut(auth); } catch (e) { console.error(e); }
+            };
+
+            const toggleFollow = async () => {
+                if (!user || isOwnProfile) return;
                 try {
-                    await signOut(auth);
-                } catch (e) { console.error(e); }
+                    if (isFollowing) {
+                        await unfollowUser(user.uid, targetUid);
+                        setIsFollowing(false);
+                        setProfile(prev => ({ ...prev, followers: (prev.followers || []).filter(id => id !== user.uid) }));
+                    } else {
+                        await followUser(user.uid, targetUid);
+                        setIsFollowing(true);
+                        setProfile(prev => ({ ...prev, followers: [...(prev.followers || []), user.uid] }));
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
             };
 
             const updateCommander = async (card) => {
@@ -1158,19 +1238,34 @@
             return (
                 <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24">
                     <div className="max-w-2xl mx-auto space-y-8">
+                        {onBack && <button onClick={onBack} className="text-slate-400 hover:text-white flex items-center gap-1 mb-4"><Icons.ChevronLeft className="w-4 h-4" /> Back</button>}
                         <div className="flex items-center justify-between">
                             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                                 <Icons.User className="w-8 h-8 text-purple-500" />
-                                My Profile
+                                {isOwnProfile ? 'My Profile' : (profile?.displayName || 'Player Profile')}
                             </h1>
                             <div className="flex gap-2">
-                                <button onClick={() => setEditing(!editing)} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition-colors border border-slate-700">
-                                    {editing ? 'Cancel' : 'Edit Profile'}
-                                </button>
-                                <button onClick={handleLogout} className="bg-red-900/30 hover:bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-bold transition-colors border border-red-900/50">
-                                    <Icons.LogOut className="w-5 h-5" />
-                                </button>
+                                {isOwnProfile ? (
+                                    <>
+                                        <button onClick={() => setEditing(!editing)} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition-colors border border-slate-700">
+                                            {editing ? 'Cancel' : 'Edit Profile'}
+                                        </button>
+                                        <button onClick={handleLogout} className="bg-red-900/30 hover:bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-bold transition-colors border border-red-900/50">
+                                            <Icons.LogOut className="w-5 h-5" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={toggleFollow} className={`px-6 py-2 rounded-lg font-bold transition-all border ${isFollowing ? 'bg-transparent border-slate-500 text-slate-400 hover:border-red-500 hover:text-red-500' : 'bg-purple-600 border-purple-500 text-white hover:bg-purple-500'}`}>
+                                        {isFollowing ? 'Unfollow' : 'Follow'}
+                                    </button>
+                                )}
                             </div>
+                        </div>
+
+                        {/* Social Counts */}
+                        <div className="flex gap-6 justify-center md:justify-start">
+                            <div className="text-center md:text-left"><span className="text-2xl font-black text-white">{profile?.followers?.length || 0}</span> <span className="text-xs text-slate-500 uppercase font-bold">Followers</span></div>
+                            <div className="text-center md:text-left"><span className="text-2xl font-black text-white">{profile?.following?.length || 0}</span> <span className="text-xs text-slate-500 uppercase font-bold">Following</span></div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1833,6 +1928,7 @@
                                         onUpdate={(id, updates) => { if (id === user.uid) updateSelf(updates); }}
                                         onDead={(id) => { if (id === user.uid) updateSelf({ isDead: true }); }}
                                         onLog={addLogEntry}
+                                        playerId={p.id} // Pass player ID for profile linking
                                     />
                                 ))}
                             </div>
@@ -1993,10 +2089,31 @@
             const [view, setView] = useState(() => {
                 if (typeof window !== 'undefined') {
                     const params = new URLSearchParams(window.location.search);
-                    return params.get('room') ? 'online' : 'local';
+                    if (params.get('room')) return 'online';
+                    if (params.get('profile')) return 'profile';
                 }
                 return 'local';
             });
+
+            // If view is profile, we might need a specific UID
+            const [viewProfileUid, setViewProfileUid] = useState(() => {
+                if (typeof window !== 'undefined') {
+                    const params = new URLSearchParams(window.location.search);
+                    return params.get('profile') || null;
+                }
+                return null;
+            });
+
+            // Expose a global way to set view profile (hacky but effective for deep integration in child components without context)
+            useEffect(() => {
+                window.setViewProfile = (uid) => {
+                    setViewProfileUid(uid);
+                    setView('profile');
+                    // Optional: update URL
+                    const newUrl = uid ? `?profile=${uid}` : '?profile';
+                    window.history.pushState({}, '', newUrl);
+                };
+            }, []);
 
             const [isLocalSetup, setIsLocalSetup] = useState(true);
             const [localPlayers, setLocalPlayers] = useState([]);
@@ -2208,7 +2325,7 @@
                                 </>
                             )}
                             {view === 'online' && <OnlineRoom user={user} onLeave={() => setView('local')} />}
-                            {view === 'profile' && <ProfilePage user={user} />}
+                            {view === 'profile' && <ProfilePage user={user} viewUserUid={viewProfileUid} onBack={() => { setViewProfileUid(null); setView('local'); window.history.pushState({}, '', '/'); }} />}
                             {view === 'stats' && <StatsPage user={user} />}
                             {view === 'contact' && <ContactPage />}
                             {view === 'changes' && <Changelog />}
