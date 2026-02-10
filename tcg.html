@@ -1094,12 +1094,13 @@
                 } catch (e) { setError(e.message); }
             };
 
-            const sendMessage = async () => {
-                if (!chatInput.trim()) return;
-                const msg = { sender: playerName, text: chatInput.trim(), timestamp: Date.now() };
+            const sendMessage = async (customText = null) => {
+                const textToSend = customText || chatInput.trim();
+                if (!textToSend) return;
+                const msg = { sender: playerName, text: textToSend, timestamp: Date.now() };
                 const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
                 await updateDoc(roomRef, { messages: arrayUnion(msg) });
-                setChatInput('');
+                if (!customText) setChatInput('');
             };
 
             const addLogEntry = async (entry) => {
@@ -1290,7 +1291,7 @@
                             </div>
                         )}
 
-                        {showCardSearch && <CardSearch onSelect={(card) => { setViewingCard(card); setShowCardSearch(false); }} onClose={() => setShowCardSearch(false)} mode="any" />}
+                        {showCardSearch && <CardSearch onSelect={(card) => { setViewingCard(card); setShowCardSearch(false); sendMessage(`I found [${card.name}]`); }} onClose={() => setShowCardSearch(false)} mode="any" />}
                         {viewingCard && <CardDetailModal card={viewingCard} onClose={() => setViewingCard(null)} />}
                         {showCopiedToast && (<div className="absolute top-16 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full shadow-lg z-50 animate-bounce">Link Copied!</div>)}
 
@@ -1434,6 +1435,16 @@
         const Changelog = () => (
             <div className="absolute inset-0 p-8 max-w-3xl mx-auto text-slate-300 space-y-8 h-full overflow-y-auto scroll-container pb-24">
                 <h1 className="text-3xl font-bold text-white mb-8">Patch Notes</h1>
+                <div className="relative pl-8 border-l-2 border-slate-700">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-slate-900" />
+                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.25.0 - Quality of Life</div>
+                    <h3 className="text-xl font-bold text-white mb-2">Game Improvements</h3>
+                    <ul className="list-disc pl-4 space-y-2 text-slate-400">
+                        <li><strong className="text-slate-200">Who Goes First?:</strong> Added a dice and randomizer tool to help decide the starting player.</li>
+                        <li><strong className="text-slate-200">Card Sharing:</strong> Looking up a card in the lobby now automatically shares it in the chat.</li>
+                        <li><strong className="text-slate-200">Stability:</strong> Improved player connection handling to prevent life resets.</li>
+                    </ul>
+                </div>
                 <div className="relative pl-8 border-l-2 border-slate-700">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-slate-900" />
                     <div className="mb-1 text-purple-400 font-mono text-sm">v2.24.1 - Admin Power</div>
