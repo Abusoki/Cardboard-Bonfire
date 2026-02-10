@@ -1259,6 +1259,9 @@
                 return (
                     <div className="h-full flex flex-col relative">
                         <div className="absolute top-4 right-4 md:right-8 z-30 flex items-center gap-2">
+                            <button onClick={() => setShowToolsModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600 transition-colors">
+                                <Icons.Dices className="w-5 h-5 text-purple-400" />
+                            </button>
                             <button onClick={() => setShowHistoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600">
                                 <Icons.Clock className="w-5 h-5 text-purple-400" />
                             </button>
@@ -1272,6 +1275,7 @@
                             </button>
                         </div>
 
+                        {showToolsModal && <GameToolsModal players={players} onClose={() => setShowToolsModal(false)} />}
                         {showHistoryModal && <HistoryModal log={roomLog} onClose={() => setShowHistoryModal(false)} />}
 
                         {showChat && (
