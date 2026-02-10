@@ -990,7 +990,7 @@
                         <div className={`flex justify-between items-start ${isSideways ? 'w-full' : ''}`}>
                             <div className="flex flex-col items-start gap-1 max-w-[70%]">
                                 <div className="flex items-center gap-2">
-                                    <span onClick={() => { if (playerId && window.setViewProfile) window.setViewProfile(playerId); }} className="font-bold text-white text-sm bg-black/40 px-3 py-1 rounded-full backdrop-blur-md cursor-pointer hover:bg-black/60 hover:text-purple-300 transition-colors">{name}</span>
+                                    <span onClick={() => { if (window.setViewProfile) window.setViewProfile(name); }} className="font-bold text-white text-sm bg-black/40 px-3 py-1 rounded-full backdrop-blur-md cursor-pointer hover:bg-black/60 hover:text-purple-300 transition-colors">{name}</span>
                                     {canKick && showKick && (
                                         <button onClick={() => onKick(id)} className="text-red-500/50 hover:text-red-500 transition-colors p-1"><Icons.LogOut className="w-3 h-3" /></button>
                                     )}
@@ -1152,44 +1152,70 @@
         );
 
         // 8. Profile Page
-        const ProfilePage = ({ user, viewUserUid = null, onBack = null }) => {
+        const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
             const [profile, setProfile] = useState(null);
             const [loading, setLoading] = useState(true);
             const [editing, setEditing] = useState(false);
             const [formData, setFormData] = useState({ displayName: '', favoriteColor: 'Colorless' });
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
             const [isFollowing, setIsFollowing] = useState(false);
-            const isOwnProfile = !viewUserUid || (user && user.uid === viewUserUid);
-            const targetUid = viewUserUid || user?.uid;
+            const [resolvedUid, setResolvedUid] = useState(null);
+            const [notFound, setNotFound] = useState(false);
+            const [showCopied, setShowCopied] = useState(false);
 
             useEffect(() => {
-                if (!targetUid) return;
-                const load = async () => {
-                    const data = await getUserProfile(targetUid);
+                const resolveAndLoad = async () => {
+                    setLoading(true);
+                    setNotFound(false);
+                    let target = viewProfileId;
+
+                    // If no ID passed, assume current user
+                    if (!target) {
+                        if (user) target = user.uid;
+                        else { setLoading(false); return; }
+                    }
+
+                    // Check if target is a Username (heuristic: not 28 chars or contains spaces/etc - though firebase UIDs are restrictive)
+                    // Safer: Check 'usernames' collection first if it doesn't look like a standard UID, OR just always check usernames if length != 28
+                    if (target.length !== 28 && target !== user?.uid) {
+                        try {
+                            const usernameDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'usernames', target.toLowerCase()));
+                            if (usernameDoc.exists()) {
+                                target = usernameDoc.data().uid;
+                            } else {
+                                // Could be a legacy UID or invalid. If it fails `getUserProfile`, we show not found.
+                            }
+                        } catch (e) { console.error("Username lookup failed", e); }
+                    }
+
+                    setResolvedUid(target);
+
+                    const data = await getUserProfile(target);
                     if (data) {
                         setProfile(data);
-                        if (isOwnProfile) {
+                        if (user && target === user.uid) {
                             setFormData({
                                 displayName: data.displayName || '',
                                 favoriteColor: data.favoriteColor || 'Colorless'
                             });
                         }
                         // Check follow status
-                        if (!isOwnProfile && user) {
-                            // We need to check current logged in user's following list
-                            // Ideally we subscribe to current user doc in App, but here we can just do a quick check
+                        if (user && target !== user.uid) {
                             const currentUserDoc = await getUserProfile(user.uid);
-                            if (currentUserDoc && currentUserDoc.following && currentUserDoc.following.includes(targetUid)) {
+                            if (currentUserDoc && currentUserDoc.following && currentUserDoc.following.includes(target)) {
                                 setIsFollowing(true);
                             }
                         }
-                    } else if (isOwnProfile && user) {
-                        if (user.displayName) setFormData(prev => ({ ...prev, displayName: user.displayName }));
+                    } else {
+                        setNotFound(true);
                     }
                     setLoading(false);
                 };
-                load();
-            }, [targetUid, user, isOwnProfile]);
+                resolveAndLoad();
+            }, [viewProfileId, user]);
+
+            const isOwnProfile = user && resolvedUid === user.uid;
+            const targetUid = resolvedUid;
 
             const handleSave = async () => {
                 if (!user || !isOwnProfile) return;
@@ -1247,6 +1273,15 @@
                             <div className="flex gap-2">
                                 {isOwnProfile ? (
                                     <>
+                                        <button onClick={() => {
+                                            const url = window.location.origin + window.location.pathname + '?profile=' + (profile.displayName || user.uid);
+                                            navigator.clipboard.writeText(url);
+                                            setShowCopied(true);
+                                            setTimeout(() => setShowCopied(false), 2000);
+                                        }} className="bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 px-4 py-2 rounded-lg font-bold transition-colors border border-purple-900/50 flex items-center gap-2">
+                                            <Icons.Share className="w-5 h-5" />
+                                            {showCopied ? 'Copied!' : 'Share'}
+                                        </button>
                                         <button onClick={() => setEditing(!editing)} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition-colors border border-slate-700">
                                             {editing ? 'Cancel' : 'Edit Profile'}
                                         </button>
@@ -2095,8 +2130,8 @@
                 return 'local';
             });
 
-            // If view is profile, we might need a specific UID
-            const [viewProfileUid, setViewProfileUid] = useState(() => {
+            // If view is profile, `viewProfileId` can be a UID or a Username
+            const [viewProfileId, setViewProfileId] = useState(() => {
                 if (typeof window !== 'undefined') {
                     const params = new URLSearchParams(window.location.search);
                     return params.get('profile') || null;
@@ -2104,13 +2139,13 @@
                 return null;
             });
 
-            // Expose a global way to set view profile (hacky but effective for deep integration in child components without context)
+            // Expose a global way to set view profile
             useEffect(() => {
-                window.setViewProfile = (uid) => {
-                    setViewProfileUid(uid);
+                window.setViewProfile = (idOrName) => {
+                    setViewProfileId(idOrName);
                     setView('profile');
-                    // Optional: update URL
-                    const newUrl = uid ? `?profile=${uid}` : '?profile';
+                    // Update URL with username or ID
+                    const newUrl = idOrName ? `?profile=${idOrName}` : '?profile';
                     window.history.pushState({}, '', newUrl);
                 };
             }, []);
@@ -2325,7 +2360,7 @@
                                 </>
                             )}
                             {view === 'online' && <OnlineRoom user={user} onLeave={() => setView('local')} />}
-                            {view === 'profile' && <ProfilePage user={user} viewUserUid={viewProfileUid} onBack={() => { setViewProfileUid(null); setView('local'); window.history.pushState({}, '', '/'); }} />}
+                            {view === 'profile' && <ProfilePage user={user} viewProfileId={viewProfileId} onBack={() => { setViewProfileId(null); setView('local'); window.history.pushState({}, '', '/'); }} />}
                             {view === 'stats' && <StatsPage user={user} />}
                             {view === 'contact' && <ContactPage />}
                             {view === 'changes' && <Changelog />}
