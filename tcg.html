@@ -105,8 +105,9 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, addDoc, deleteDoc, serverTimestamp, query, orderBy, limit, increment, arrayUnion, getDoc, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, arrayUnion, setDoc, getDoc, increment, serverTimestamp, deleteDoc, runTransaction, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
         const { useState, useEffect, useRef, useMemo } = React;
 
@@ -148,7 +149,7 @@
             FileText: (p) => <Icon {...p} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></>} />,
             Mail: (p) => <Icon {...p} path={<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></>} />,
             Sliders: (p) => <Icon {...p} path={<><line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" /><line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" /><line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" /><line x1="1" x2="7" y1="14" y2="14" /><line x1="9" x2="15" y1="8" y2="8" /><line x1="17" x2="23" y1="16" y2="16" /></>} />,
-            Sword: (p) => <Icon {...p} path={<><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y2="19" /></>} />,
+            Sword: (p) => <Icon {...p} path={<><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" /><line x1="13" x2="19" y1="19" y2="13" /><line x1="16" x2="20" y1="16" y2="20" /><line x1="19" x2="21" y1="21" y1="19" /></>} />,
             Droplet: (p) => <Icon {...p} path={<path d="M12 22a7 7 0 0 0 7-7c0-2-2-3-2-3L12 2 7 12s-2 1-2 3a7 7 0 0 0 7 7z" />} />,
             RotateCw: (p) => <Icon {...p} path={<><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /></>} />,
             Lock: (p) => <Icon {...p} path={<><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>} />,
@@ -246,6 +247,57 @@
                 },
                 lastActive: serverTimestamp()
             }, { merge: true });
+        };
+
+        // --- MTG Color Identities ---
+        const MTG_IDENTITIES = {
+            // Mono
+            'White': { colors: ['#F0F2C0'], symbol: 'prod/w' },
+            'Blue': { colors: ['#B3CEEA'], symbol: 'prod/u' },
+            'Black': { colors: ['#A69F9D'], symbol: 'prod/b' },
+            'Red': { colors: ['#EBA082'], symbol: 'prod/r' },
+            'Green': { colors: ['#C4D3CA'], symbol: 'prod/g' },
+            'Colorless': { colors: ['#CBCBCB'], symbol: 'prod/c' },
+            // Guilds (2 Color)
+            'Azorius': { colors: ['#F0F2C0', '#B3CEEA'], description: 'White/Blue' },
+            'Dimir': { colors: ['#B3CEEA', '#A69F9D'], description: 'Blue/Black' },
+            'Rakdos': { colors: ['#A69F9D', '#EBA082'], description: 'Black/Red' },
+            'Gruul': { colors: ['#EBA082', '#C4D3CA'], description: 'Red/Green' },
+            'Selesnya': { colors: ['#F0F2C0', '#C4D3CA'], description: 'White/Green' },
+            'Orzhov': { colors: ['#F0F2C0', '#A69F9D'], description: 'White/Black' },
+            'Izzet': { colors: ['#B3CEEA', '#EBA082'], description: 'Blue/Red' },
+            'Golgari': { colors: ['#A69F9D', '#C4D3CA'], description: 'Black/Green' },
+            'Boros': { colors: ['#F0F2C0', '#EBA082'], description: 'White/Red' },
+            'Simic': { colors: ['#B3CEEA', '#C4D3CA'], description: 'Blue/Green' },
+            // Shards (3 Color)
+            'Bant': { colors: ['#F0F2C0', '#B3CEEA', '#C4D3CA'], description: 'WUG' },
+            'Esper': { colors: ['#F0F2C0', '#B3CEEA', '#A69F9D'], description: 'WUB' },
+            'Grixis': { colors: ['#B3CEEA', '#A69F9D', '#EBA082'], description: 'UBR' },
+            'Jund': { colors: ['#A69F9D', '#EBA082', '#C4D3CA'], description: 'BRG' },
+            'Naya': { colors: ['#F0F2C0', '#EBA082', '#C4D3CA'], description: 'WRG' },
+            // Wedges (3 Color)
+            'Abzan': { colors: ['#F0F2C0', '#A69F9D', '#C4D3CA'], description: 'WBG' },
+            'Jeskai': { colors: ['#F0F2C0', '#B3CEEA', '#EBA082'], description: 'WUR' },
+            'Sultai': { colors: ['#A69F9D', '#C4D3CA', '#B3CEEA'], description: 'BGU' },
+            'Mardu': { colors: ['#F0F2C0', '#A69F9D', '#EBA082'], description: 'WBR' },
+            'Temur': { colors: ['#C4D3CA', '#B3CEEA', '#EBA082'], description: 'GUR' },
+            // 5 Color
+            'WUBRG': { colors: ['#F0F2C0', '#B3CEEA', '#A69F9D', '#EBA082', '#C4D3CA'], description: 'All Colors' }
+        };
+
+        const IdentityIcon = ({ id, size = "w-6 h-6" }) => {
+            const data = MTG_IDENTITIES[id] || MTG_IDENTITIES['Colorless'];
+            const gradient = data.colors.length > 1
+                ? `linear-gradient(135deg, ${data.colors.join(', ')})`
+                : data.colors[0];
+
+            return (
+                <div
+                    className={`${size} rounded-full shadow-inner border border-slate-600/50`}
+                    style={{ background: gradient }}
+                    title={id}
+                />
+            );
         };
 
         // --- Web Worker Heartbeat Hook ---
@@ -428,6 +480,85 @@
         );
 
         // 4. Unified Card Search (Updated for Partner)
+        // 7. Auth Page
+        const AuthPage = () => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setError(null);
+                setLoading(true);
+                try {
+                    if (isLogin) {
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } else {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                    }
+                } catch (err) {
+                    setError(err.message.replace('Firebase: ', ''));
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleGuest = async () => {
+                setLoading(true);
+                try {
+                    await signInAnonymously(auth);
+                } catch (err) {
+                    setError(err.message);
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95">
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
+                                <Icons.Shield className="text-white w-10 h-10" />
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                            <p className="text-slate-400">Sign in to sync your stats and profile</p>
+                        </div>
+
+                        {error && <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg mb-6 text-sm font-bold text-center">{error}</div>}
+
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                                <input type="email" required className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" value={email} onChange={e => setEmail(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                                <input type="password" required className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" value={password} onChange={e => setPassword(e.target.value)} />
+                            </div>
+                            <button disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50">
+                                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 text-center space-y-4">
+                            <button onClick={() => setIsLogin(!isLogin)} className="text-slate-400 hover:text-white text-sm">
+                                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                            </button>
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700"></div></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Or continue as</span></div>
+                            </div>
+                            <button onClick={handleGuest} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-all border border-slate-700">
+                                Guest
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const CardSearch = ({ onSelect, onClose, mode = 'commander' }) => {
             const [query, setQuery] = useState('');
             const [results, setResults] = useState([]);
@@ -482,7 +613,7 @@
                                     onChange={handleInput}
                                     autoFocus
                                 />
-                                <button onClick={onClose}><Icons.X className="text-slate-400 hover:text-white w-5 h-5" /></button>
+                                <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
                             </div>
                             {mode === 'commander' && (
                                 <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer self-start ml-8">
@@ -666,7 +797,7 @@
                 const newLife = life + amount;
                 const deadByPoison = poison >= 10;
                 // Check damages: Primary or Partner > 21
-                const deadByCmdr = Object.values(commanderDamage).some(dmg => dmg >= 21);
+                const deadByCmdr = Object.values(commanderDamage).some(d => d >= 21);
                 const deadByLife = newLife <= 0;
                 onUpdate(id, { life: newLife, isDead: deadByPoison || deadByCmdr || deadByLife || milled });
                 lifeChangeRef.current += amount;
@@ -734,7 +865,7 @@
                             </div>
                             <div className="flex items-center gap-2">{isLocal && <div className="w-8 h-8"></div>}{milled && <Icons.Book className="text-blue-400 w-5 h-5 drop-shadow-md" />}{isDead && <Icons.Skull className="text-red-500 w-6 h-6 animate-pulse" />}{isWinner && <Icons.Crown className="text-yellow-400 w-6 h-6 animate-bounce" />}</div>
                         </div>
-                        <div className={`flex-1 flex flex-col items-center justify-center ${isSideways ? 'py-1' : 'py-4'}`}>
+                        <div className="flex-1 flex flex-col items-center justify-center py-4">
                             <div className="flex items-center gap-6">
                                 <button onClick={() => adjustLife(-1)} className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm active:scale-95 transition-all"><span className="text-3xl font-light mb-1">-</span></button>
                                 <div className="flex flex-col items-center">
@@ -798,7 +929,7 @@
                     />}
                     {showTools && (
                         <div className={`absolute inset-0 bg-slate-900/95 z-20 flex flex-col p-4 transition-transform duration-300 ${rotateClass}`}>
-                            <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2"><h3 className="text-white font-bold flex items-center gap-2"><Icons.Sliders className="w-4 h-4 text-purple-400" /> Damage & Counters</h3><button onClick={() => setShowTools(false)}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button></div>
+                            <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2"><h3 className="text-white font-bold flex items-center gap-2"><Icons.Sliders className="w-4 h-4" /> Damage & Counters</h3><button onClick={() => setShowTools(false)}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button></div>
                             <div className="flex-1 overflow-y-auto space-y-4">
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-green-400 flex items-center gap-2"><Icons.Droplet className="w-4 h-4" /> Poison (Infect)</span><span className="text-xs text-slate-500">Die at 10</span></div><div className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><button onClick={() => adjustPoison(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button><span className="font-mono text-xl text-white font-bold">{poison || 0}</span><button onClick={() => adjustPoison(1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button></div></div>
 
@@ -886,7 +1017,7 @@
             const [profile, setProfile] = useState(null);
             const [loading, setLoading] = useState(true);
             const [editing, setEditing] = useState(false);
-            const [formData, setFormData] = useState({ displayName: '', favoriteColor: '#a855f7' });
+            const [formData, setFormData] = useState({ displayName: '', favoriteColor: 'Colorless' }); // Changed default
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
 
             useEffect(() => {
@@ -895,7 +1026,13 @@
                     const data = await getUserProfile(user.uid);
                     if (data) {
                         setProfile(data);
-                        setFormData({ displayName: data.displayName || '', favoriteColor: data.favoriteColor || '#a855f7' });
+                        setFormData({
+                            displayName: data.displayName || '',
+                            favoriteColor: data.favoriteColor || 'Colorless'
+                        });
+                    } else if (user.displayName) {
+                        // Pre-fill from Auth if available
+                        setFormData(prev => ({ ...prev, displayName: user.displayName }));
                     }
                     setLoading(false);
                 };
@@ -904,11 +1041,26 @@
 
             const handleSave = async () => {
                 if (!user) return;
-                await updateUserProfile(user.uid, formData);
-                setProfile({ ...profile, ...formData });
-                setEditing(false);
-                // Also update local storage for backward compat
-                if (formData.displayName) localStorage.setItem('mtg_username', formData.displayName);
+                try {
+                    // Update Auth Profile if changed
+                    if (user.displayName !== formData.displayName) {
+                        // Note: updateProfile is from auth SDK, we need to handle it safely 
+                        // but for this simplified app we'll focus on Firestore
+                    }
+
+                    await updateUserProfile(user.uid, formData);
+                    setProfile({ ...profile, ...formData });
+                    setEditing(false);
+                    if (formData.displayName) localStorage.setItem('mtg_username', formData.displayName);
+                } catch (e) {
+                    console.error("Save failed", e);
+                }
+            };
+
+            const handleLogout = async () => {
+                try {
+                    await signOut(auth);
+                } catch (e) { console.error(e); }
             };
 
             const updateCommander = async (card) => {
@@ -930,9 +1082,14 @@
                                 <Icons.User className="w-8 h-8 text-purple-500" />
                                 My Profile
                             </h1>
-                            <button onClick={() => setEditing(!editing)} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition-colors">
-                                {editing ? 'Cancel' : 'Edit Profile'}
-                            </button>
+                            <div className="flex gap-2">
+                                <button onClick={() => setEditing(!editing)} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold transition-colors border border-slate-700">
+                                    {editing ? 'Cancel' : 'Edit Profile'}
+                                </button>
+                                <button onClick={handleLogout} className="bg-red-900/30 hover:bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-bold transition-colors border border-red-900/50">
+                                    <Icons.LogOut className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -952,9 +1109,9 @@
                                         <div className="text-3xl font-black text-green-400">{profile?.stats?.gamesPlayed ? Math.round(((profile.stats.wins || 0) / profile.stats.gamesPlayed) * 100) : 0}%</div>
                                         <div className="text-xs text-slate-500 uppercase font-bold">Win Rate</div>
                                     </div>
-                                    <div className="bg-slate-950 p-4 rounded-xl text-center flex items-center justify-center">
-                                        <div className="w-8 h-8 rounded-full" style={{ backgroundColor: profile?.favoriteColor || '#a855f7' }}></div>
-                                        <div className="text-xs text-slate-500 uppercase font-bold ml-2">Color Identity</div>
+                                    <div className="bg-slate-950 p-4 rounded-xl text-center flex items-center justify-center flex-col">
+                                        <IdentityIcon id={profile?.favoriteColor} />
+                                        <div className="text-xs text-slate-500 uppercase font-bold mt-2">{profile?.favoriteColor || 'Colorless'}</div>
                                     </div>
                                 </div>
                             </div>
@@ -974,26 +1131,29 @@
                                                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none"
                                                 />
                                             ) : (
-                                                <div className="text-lg font-bold text-white">{profile?.displayName || 'Anonymous'}</div>
+                                                <div className="text-lg font-bold text-white">{profile?.displayName || user.email || 'Anonymous'}</div>
                                             )}
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Favorite Color</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Color Identity</label>
                                             {editing ? (
-                                                <div className="flex gap-2">
-                                                    {['#ef4444', '#22c55e', '#3b82f6', '#000000', '#ffffff', '#a855f7', '#f59e0b'].map(c => (
+                                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
+                                                    {Object.keys(MTG_IDENTITIES).map(id => (
                                                         <button
-                                                            key={c}
-                                                            onClick={() => setFormData({ ...formData, favoriteColor: c })}
-                                                            className={`w-8 h-8 rounded-full border-2 ${formData.favoriteColor === c ? 'border-white scale-110' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                                                            style={{ backgroundColor: c }}
-                                                        />
+                                                            key={id}
+                                                            onClick={() => setFormData({ ...formData, favoriteColor: id })}
+                                                            className={`p-1 rounded-lg border flex flex-col items-center gap-1 ${formData.favoriteColor === id ? 'bg-purple-600/20 border-purple-500' : 'border-transparent hover:bg-slate-800'}`}
+                                                            title={id}
+                                                        >
+                                                            <IdentityIcon id={id} />
+                                                        </button>
                                                     ))}
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full border border-slate-600" style={{ backgroundColor: profile?.favoriteColor || '#a855f7' }}></div>
-                                                    <span className="text-slate-300 capitalize">Selected Identity</span>
+                                                    <IdentityIcon id={profile?.favoriteColor} />
+                                                    <span className="text-slate-300 font-bold">{profile?.favoriteColor || 'Colorless'}</span>
+                                                    {MTG_IDENTITIES[profile?.favoriteColor]?.description && <span className="text-xs text-slate-500">({MTG_IDENTITIES[profile?.favoriteColor]?.description})</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -1016,7 +1176,7 @@
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
                                                 <div className="font-bold text-white">{(editing ? formData.favoriteCommander : profile.favoriteCommander)?.name}</div>
                                             </div>
-                                            {editing && <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Icons.Search className="w-8 h-8 text-white" /></div>}
+                                            {editing && <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Icons.Search className="w-8 h-8" /></div>}
                                         </div>
                                     ) : (
                                         <button onClick={() => editing && setShowCmdrSearch(true)} className={`flex-1 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center gap-2 text-slate-500 ${editing ? 'hover:border-purple-500 hover:text-purple-400 cursor-pointer' : ''}`}>
@@ -1765,17 +1925,21 @@
             const [viewingCard, setViewingCard] = useState(null);
 
             useEffect(() => {
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
+                const unsubscribe = onAuthStateChanged(auth, async (u) => {
+                    if (u) {
+                        setUser(u);
+                        // Also try fetch profile?
                     } else {
-                        await signInAnonymously(auth);
+                        // FIX: Do NOT auto sign-in anonymously if we want an auth gate
+                        setUser(null);
                     }
-                };
-                initAuth();
-                const unsubscribe = onAuthStateChanged(auth, setUser);
+                });
                 return () => unsubscribe();
             }, []);
+
+            if (!user) {
+                return <AuthPage />;
+            }
 
             const startLocalGame = (count) => {
                 const newPlayers = Array.from({ length: count }, (_, i) => ({
