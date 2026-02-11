@@ -1415,6 +1415,7 @@
             const [joinedRoom, setJoinedRoom] = useState(null);
             const [error, setError] = useState('');
             const [players, setPlayers] = useState([]);
+            const [roomData, setRoomData] = useState(null);
             const [showCopiedToast, setShowCopiedToast] = useState(false);
             const [showCardSearch, setShowCardSearch] = useState(false);
             const [viewingCard, setViewingCard] = useState(null);
@@ -1592,7 +1593,7 @@
                         isGuest: user.isAnonymous
                     };
                     await setDoc(roomRef, {
-                        name: hostName, password: hostPassword, createdAt: serverTimestamp(),
+                        name: hostName, password: hostPassword, hostId: user.uid, createdAt: serverTimestamp(),
                         lastActivity: serverTimestamp(), players: { [user.uid]: playerData }, log: [], messages: []
                     });
                     if (playerData.commander && hostName !== "Test") updateCommanderStat(playerData.commander);
@@ -1761,6 +1762,7 @@
                 const unsubscribe = onSnapshot(roomRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+                        setRoomData(data);
 
                         // Timeout checks
                         const now = Date.now();
@@ -1836,7 +1838,7 @@
                 if (updates.partner && joinedRoom !== "Test") updateCommanderStat(updates.partner);
             };
 
-            const isHost = players.length > 0 && players[0].id === user.uid;
+            const isHost = roomData?.hostId === user.uid;
 
             // --- WINNER LOGIC RESTORED ---
             const activePlayers = players.filter(p => !p.isDead);
@@ -2064,7 +2066,18 @@
                 <h1 className="text-3xl font-bold text-white mb-8">Patch Notes</h1>
                 <div className="relative pl-8 border-l-2 border-slate-700">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-slate-900" />
-                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.26.0 - Social & Style</div>
+                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.27.0 - Stability & UX</div>
+                    <h3 className="text-xl font-bold text-white mb-2">Bug Fixes & Improvements</h3>
+                    <ul className="list-disc pl-4 space-y-2 text-slate-400">
+                        <li><strong className="text-slate-200">Stable Player Panels:</strong> Fixed player panels constantly switching positions in multiplayer lobbies.</li>
+                        <li><strong className="text-slate-200">Green Usernames:</strong> Logged-in users now display with green usernames to distinguish them from guests.</li>
+                        <li><strong className="text-slate-200">Host Button Fix:</strong> Close and Reset buttons now remain visible consistently for room hosts.</li>
+                        <li><strong className="text-slate-200">Guest Flow:</strong> Guest users are no longer prompted to set a username (reserved for registered users).</li>
+                    </ul>
+                </div>
+                <div className="relative pl-8 border-l-2 border-slate-700">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-700 ring-4 ring-slate-900" />
+                    <div className="mb-1 text-slate-500 font-mono text-sm">v2.26.0 - Social & Style</div>
                     <h3 className="text-xl font-bold text-white mb-2">Profiles & Leaderboards</h3>
                     <ul className="list-disc pl-4 space-y-2 text-slate-400">
                         <li><strong className="text-slate-200">Public Profiles:</strong> You can now view other players' profiles and Follow them!</li>
@@ -2198,7 +2211,8 @@
             // We use a simple check: if auth.currentUser.displayName is missing, prompt setup.
             // But better to check firestore doc for robust sync. 
             // For now, let's rely on auth.currentUser.displayName as primary signal because we update it on setup.
-            if (!user.displayName) {
+            // Skip username prompt for anonymous users (guests)
+            if (!user.isAnonymous && !user.displayName) {
                 return <UsernameSetup user={user} onComplete={(name) => {
                     // Force refresh of user state to pick up the new displayName
                     setUser({ ...user, displayName: name });
