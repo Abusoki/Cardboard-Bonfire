@@ -83,6 +83,7 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* Custom Scrollbar */
@@ -276,7 +277,7 @@
     </style>
 </head>
 
-<body class="bg-slate-950 text-slate-200 h-[100dvh] overflow-hidden">
+<body class="bg-[var(--bg-primary)] text-[var(--text-primary)] h-[100dvh] overflow-hidden">
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel" data-type="module">
@@ -600,10 +601,10 @@
         // --- Life History Modal ---
         const LifeHistoryModal = ({ name, history, startLife = 40, onClose }) => {
             if (!history || history.length === 0) return (
-                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
-                    <div className="bg-slate-900 p-8 rounded-2xl border border-slate-700 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="text-slate-400 mb-4">No life history yet.</div>
-                        <button onClick={onClose} className="text-slate-400 hover:text-white">Close</button>
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
+                    <div className="bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border)] text-center shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="text-[var(--text-muted)] mb-4">No life history yet.</div>
+                        <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Close</button>
                     </div>
                 </div>
             );
@@ -620,13 +621,13 @@
             const colorClass = lastLife <= 0 ? '#ef4444' : lastLife <= 10 ? '#f59e0b' : '#a855f7';
 
             return (
-                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
-                    <div className="bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
-                            <h3 className="font-bold text-white flex items-center gap-2">
-                                <Icons.BarChart2 className="w-4 h-4 text-purple-400" /> {name} — Life History
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+                    <div className="bg-[var(--bg-secondary)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)]">
+                            <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                                <Icons.BarChart2 className="w-4 h-4 text-[var(--accent)]" /> {name} — Life History
                             </h3>
-                            <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+                            <button onClick={onClose}><Icons.X className="w-5 h-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" /></button>
                         </div>
                         <div className="p-4">
                             <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="overflow-visible">
@@ -635,8 +636,8 @@
                                     const y = PAD + i * (H - PAD * 2) / 3;
                                     const val = Math.round(maxL - i * (maxL - minL) / 3);
                                     return <g key={i}>
-                                        <line x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="#334155" strokeDasharray="4,4" strokeWidth="1" />
-                                        <text x={PAD - 4} y={y + 4} textAnchor="end" fill="#64748b" fontSize="9">{val}</text>
+                                        <line x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="var(--border)" strokeDasharray="4,4" strokeWidth="1" />
+                                        <text x={PAD - 4} y={y + 4} textAnchor="end" fill="var(--text-muted)" fontSize="9">{val}</text>
                                     </g>;
                                 })}
                                 {/* Zero line */}
@@ -647,29 +648,29 @@
                                 <polyline points={points} fill="none" stroke={colorClass} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                                 {/* Dots */}
                                 {allLife.map((l, i) => (
-                                    <circle key={i} cx={toX(i)} cy={toY(l)} r="3.5" fill={colorClass} stroke="#0f172a" strokeWidth="2" className="life-graph-dot">
+                                    <circle key={i} cx={toX(i)} cy={toY(l)} r="3.5" fill={colorClass} stroke="var(--bg-secondary)" strokeWidth="2" className="life-graph-dot">
                                         <title>{i === 0 ? `Start: ${l}` : `Move ${i}: ${l}`}</title>
                                     </circle>
                                 ))}
                             </svg>
-                            <div className="flex justify-between text-xs text-slate-500 mt-1 px-1">
+                            <div className="flex justify-between text-xs text-[var(--text-faint)] mt-1 px-1">
                                 <span>Start ({startLife})</span>
                                 <span>Now ({lastLife})</span>
                             </div>
                             {history.length > 0 && (
-                                <div className="mt-3 space-y-1 max-h-28 overflow-y-auto">
+                                <div className="mt-3 space-y-1 max-h-28 overflow-y-auto scroll-container">
                                     {[...history].reverse().slice(0, 10).map((h, i) => (
-                                        <div key={i} className="flex justify-between text-xs text-slate-400 border-b border-slate-800 pb-1">
+                                        <div key={i} className="flex justify-between text-xs text-[var(--text-muted)] border-b border-[var(--border-light)] pb-1">
                                             <span>{h.change > 0 ? `+${h.change}` : h.change}</span>
-                                            <span className="font-bold text-white">{h.life}</span>
-                                            <span className="text-slate-600">{new Date(h.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                            <span className="font-bold text-[var(--text-primary)]">{h.life}</span>
+                                            <span className="text-[var(--text-faint)]">{new Date(h.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-                        <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-center">
-                            <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">Close</button>
+                        <div className="p-3 bg-[var(--bg-card)] border-t border-[var(--border)] flex justify-center">
+                            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors">Close</button>
                         </div>
                     </div>
                 </div>
@@ -798,14 +799,14 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
-                    <div className="bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                        <div className="flex border-b border-slate-700">
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+                    <div className="bg-[var(--bg-secondary)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex border-b border-[var(--border)]">
                             {['first', 'dice', 'coin'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => { setActiveTab(tab); setResult(null); }}
-                                    className={`flex-1 p-3 text-sm font-bold capitalize transition-colors ${activeTab === tab ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                    className={`flex-1 p-3 text-sm font-bold capitalize transition-colors ${activeTab === tab ? 'bg-[var(--accent)] text-white shadow-inner shadow-black/20' : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]'}`}
                                 >
                                     {tab === 'first' ? 'Who First?' : tab}
                                 </button>
@@ -815,22 +816,22 @@
                         <div className="p-8 flex flex-col items-center justify-center min-h-[200px]">
                             {activeTab === 'first' && (
                                 <>
-                                    <div className={`text-3xl font-bold mb-6 text-center break-words w-full ${animating ? 'text-slate-500' : 'text-white'}`}>
+                                    <div className={`text-3xl font-bold mb-6 text-center break-words w-full ${animating ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                                         {result || "?"}
                                     </div>
-                                    <button onClick={spinForFirst} disabled={animating} className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-full font-bold">
+                                    <button onClick={spinForFirst} disabled={animating} className="bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] px-6 py-2 rounded-full font-bold border border-[var(--border)] transition-all">
                                         Spin Randomizer
                                     </button>
                                 </>
                             )}
                             {activeTab === 'dice' && (
                                 <>
-                                    <div className={`text-6xl font-black mb-8 ${animating ? 'animate-bounce text-slate-500' : 'text-purple-400'}`}>
+                                    <div className={`text-6xl font-black mb-8 ${animating ? 'animate-bounce text-[var(--text-muted)]' : 'theme-accent-text'}`}>
                                         {result || <Icons.Dices className="w-16 h-16 opacity-20" />}
                                     </div>
                                     <div className="flex gap-4">
-                                        <button onClick={() => rollDice(6)} disabled={animating} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold">Roll D6</button>
-                                        <button onClick={() => rollDice(20)} disabled={animating} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold">Roll D20</button>
+                                        <button onClick={() => rollDice(6)} disabled={animating} className="bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] px-4 py-2 rounded-lg font-bold border border-[var(--border)] transition-all">Roll D6</button>
+                                        <button onClick={() => rollDice(20)} disabled={animating} className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-purple-900/10 transition-all">Roll D20</button>
                                     </div>
                                 </>
                             )}
@@ -845,8 +846,8 @@
                                 </>
                             )}
                         </div>
-                        <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-center">
-                            <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">Close Tools</button>
+                        <div className="p-3 bg-[var(--bg-card)] border-t border-[var(--border)] flex justify-center">
+                            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors">Close Tools</button>
                         </div>
                     </div>
                 </div>
@@ -855,20 +856,20 @@
 
         // 2. History Log Modal (Unchanged)
         const HistoryModal = ({ log = [], onClose }) => (
-            <div className="fixed inset-0 bg-black/90 z-[70] flex items-end md:items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
-                <div className="bg-slate-900 w-full max-w-md h-[60vh] rounded-t-2xl md:rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
-                        <h3 className="font-bold text-white flex items-center gap-2"><Icons.Clock className="w-4 h-4" /> Game Log</h3>
-                        <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+            <div className="fixed inset-0 bg-black/60 z-[70] flex items-end md:items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+                <div className="bg-[var(--bg-secondary)] w-full max-w-md h-[60vh] rounded-t-2xl md:rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)]">
+                        <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-[var(--accent)]" /> Game Log</h3>
+                        <button onClick={onClose}><Icons.X className="w-5 h-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" /></button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-container">
                         {log.length === 0 ? (
-                            <div className="text-center text-slate-500 mt-10">No history yet.</div>
+                            <div className="text-center text-[var(--text-faint)] mt-10">No history yet.</div>
                         ) : (
                             [...log].reverse().map((entry, i) => (
-                                <div key={i} className="text-sm border-l-2 border-purple-500 pl-3 py-1">
-                                    <span className="text-xs text-slate-500 block">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="text-slate-200">{entry.message}</span>
+                                <div key={i} className="text-sm border-l-2 border-[var(--accent)] pl-3 py-1 bg-[var(--bg-card)]/30 rounded-r-lg">
+                                    <span className="text-xs text-[var(--text-faint)] block">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-[var(--text-primary)]">{entry.message}</span>
                                 </div>
                             ))
                         )}
@@ -879,21 +880,21 @@
 
         // 3. Card Detail View (Modal) (Unchanged)
         const CardDetailModal = ({ card, onClose }) => (
-            <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+            <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
                 <div className="relative max-w-lg w-full flex flex-col items-center" onClick={e => e.stopPropagation()}>
                     <img
                         src={card.fullImage || card.image}
                         alt={card.name}
-                        className="w-full max-h-[70vh] object-contain rounded-xl shadow-2xl mb-6 border border-slate-700/50"
+                        className="w-full max-h-[70vh] object-contain rounded-xl shadow-2xl mb-6 border border-[var(--border)]"
                     />
-                    <div className="text-center text-white bg-slate-900/80 p-4 rounded-xl backdrop-blur-sm border border-slate-700 w-full">
-                        <h2 className="text-2xl font-bold text-purple-300 mb-1">{card.name}</h2>
+                    <div className="text-center text-[var(--text-primary)] bg-[var(--bg-secondary)]/80 p-4 rounded-xl backdrop-blur-md border border-[var(--border)] w-full">
+                        <h2 className="text-2xl font-bold theme-accent-text mb-1">{card.name}</h2>
                         {card.artist && (
-                            <div className="text-sm text-slate-300 font-medium flex items-center justify-center gap-2">
+                            <div className="text-sm text-[var(--text-muted)] font-medium flex items-center justify-center gap-2">
                                 <span>Art by {card.artist}</span>
                             </div>
                         )}
-                        <div className="text-xs text-slate-500 mt-2 tracking-widest uppercase">™ & © Wizards of the Coast</div>
+                        <div className="text-xs text-[var(--text-faint)] mt-2 tracking-widest uppercase">™ & © Wizards of the Coast</div>
                     </div>
                     <button
                         onClick={onClose}
@@ -942,41 +943,41 @@
             };
 
             return (
-                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95">
+                <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
+                    <div className="bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border)] shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
+                            <div className="w-16 h-16 bg-[var(--accent)] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
                                 <Icons.Shield className="text-white w-10 h-10" />
                             </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                            <p className="text-slate-400">Sign in to sync your stats and profile</p>
+                            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Welcome Back</h1>
+                            <p className="text-[var(--text-muted)]">Sign in to sync your stats and profile</p>
                         </div>
 
                         {error && <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg mb-6 text-sm font-bold text-center">{error}</div>}
 
                         <form onSubmit={handleAuth} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
-                                <input type="email" required className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" value={email} onChange={e => setEmail(e.target.value)} />
+                                <label className="block text-xs font-bold text-[var(--text-faint)] uppercase mb-1">Email</label>
+                                <input type="email" required className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-3 text-[var(--text-primary)] focus:border-[var(--accent)] outline-none transition-colors placeholder:text-[var(--text-faint)]" value={email} onChange={e => setEmail(e.target.value)} />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
-                                <input type="password" required className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors" value={password} onChange={e => setPassword(e.target.value)} />
+                                <label className="block text-xs font-bold text-[var(--text-faint)] uppercase mb-1">Password</label>
+                                <input type="password" required className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-3 text-[var(--text-primary)] focus:border-[var(--accent)] outline-none transition-colors" value={password} onChange={e => setPassword(e.target.value)} />
                             </div>
-                            <button disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50">
+                            <button disabled={loading} className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-purple-900/10">
                                 {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                             </button>
                         </form>
 
                         <div className="mt-6 text-center space-y-4">
-                            <button onClick={() => setIsLogin(!isLogin)} className="text-slate-400 hover:text-white text-sm">
+                            <button onClick={() => setIsLogin(!isLogin)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors">
                                 {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
                             </button>
                             <div className="relative">
-                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700"></div></div>
-                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Or continue as</span></div>
+                                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[var(--border)]"></div></div>
+                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-[var(--bg-secondary)] px-2 text-[var(--text-faint)]">Or continue as</span></div>
                             </div>
-                            <button onClick={handleGuest} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-all border border-slate-700">
+                            <button onClick={handleGuest} className="w-full bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] font-bold py-3 rounded-xl transition-all border border-[var(--border)]">
                                 Guest
                             </button>
                         </div>
@@ -1035,29 +1036,29 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 bg-[var(--bg-primary)] flex items-center justify-center p-4 z-50">
+                    <div className="bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border)] shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95">
                         <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
+                            <div className="w-16 h-16 bg-[var(--accent)] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/20">
                                 <Icons.User className="text-white w-10 h-10" />
                             </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">Choose a Username</h1>
-                            <p className="text-slate-400">This will be your unique identity in all games.</p>
+                            <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Choose a Username</h1>
+                            <p className="text-[var(--text-muted)]">This will be your unique identity in all games.</p>
                         </div>
                         {error && <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg mb-6 text-sm font-bold text-center">{error}</div>}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
+                                <label className="block text-xs font-bold text-[var(--text-faint)] uppercase mb-1">Username</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors"
+                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-3 text-[var(--text-primary)] focus:border-[var(--accent)] outline-none transition-colors placeholder:text-[var(--text-faint)]"
                                     value={username}
                                     onChange={e => setUsername(e.target.value)}
                                     placeholder="e.g. JaceBeleren"
                                 />
                             </div>
-                            <button disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50">
+                            <button disabled={loading} className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-purple-900/10">
                                 {loading ? 'Saving...' : 'Set Username'}
                             </button>
                         </form>
@@ -1107,31 +1108,31 @@
             };
 
             return (
-                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-                        <div className="p-4 border-b border-slate-700 flex flex-col gap-2">
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in">
+                    <div className="bg-[var(--bg-secondary)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-[var(--border)] flex flex-col gap-2">
                             <div className="flex items-center gap-3">
-                                <Icons.Search className="text-slate-400 w-5 h-5" />
+                                <Icons.Search className="text-[var(--text-muted)] w-5 h-5" />
                                 <input
                                     type="text"
                                     placeholder={mode === 'commander' ? "Search Commander..." : "Search Scryfall For Any Card.."}
-                                    className="bg-transparent border-none outline-none text-white w-full placeholder:text-slate-500"
+                                    className="bg-transparent border-none outline-none text-[var(--text-primary)] w-full placeholder:text-[var(--text-faint)]"
                                     value={query}
                                     onChange={handleInput}
                                     autoFocus
                                 />
-                                <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+                                <button onClick={onClose}><Icons.X className="w-5 h-5 text-[var(--text-muted)] hover:text-[var(--text-primary)]" /></button>
                             </div>
                             {mode === 'commander' && allowPartner && (
-                                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer self-start ml-8">
-                                    <input type="checkbox" checked={asPartner} onChange={e => setAsPartner(e.target.checked)} className="rounded border-slate-600 bg-slate-800 text-purple-600 focus:ring-purple-500" />
+                                <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer self-start ml-8">
+                                    <input type="checkbox" checked={asPartner} onChange={e => setAsPartner(e.target.checked)} className="rounded border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--accent)] focus:ring-[var(--accent)]" />
                                     <span>Add as Partner</span>
                                 </label>
                             )}
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                            {loading && <div className="text-center text-slate-500 py-8">Searching Scryfall...</div>}
-                            {!loading && results.length === 0 && query.length > 2 && <div className="text-center text-slate-500 py-8">No cards found.</div>}
+                            {loading && <div className="text-center text-[var(--text-muted)] py-8">Searching Scryfall...</div>}
+                            {!loading && results.length === 0 && query.length > 2 && <div className="text-center text-[var(--text-muted)] py-8">No cards found.</div>}
                             {results.map((card) => (
                                 <div
                                     key={card.id}
@@ -1141,9 +1142,9 @@
                                         fullImage: card.image_uris?.large || card.card_faces?.[0]?.image_uris?.large || '',
                                         artist: card.artist || card.card_faces?.[0]?.artist || 'Unknown'
                                     }, asPartner)}
-                                    className="flex items-center gap-4 p-2 hover:bg-slate-800 rounded-lg cursor-pointer transition-colors group"
+                                    className="flex items-center gap-4 p-2 hover:bg-[var(--bg-elevated)] rounded-lg cursor-pointer transition-colors group"
                                 >
-                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 shrink-0 border border-slate-700 group-hover:border-purple-500">
+                                    <div className="w-12 h-12 rounded-full overflow-hidden bg-[var(--bg-primary)] shrink-0 border border-[var(--border)] group-hover:border-[var(--accent)]">
                                         {(card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop) ? (
                                             <img src={card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop} alt={card.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -1151,8 +1152,8 @@
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium text-slate-200 group-hover:text-purple-400 truncate">{card.name}</div>
-                                        <div className="text-xs text-slate-500 truncate">{card.type_line}</div>
+                                        <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] truncate">{card.name}</div>
+                                        <div className="text-xs text-[var(--text-muted)] truncate">{card.type_line}</div>
                                     </div>
                                 </div>
                             ))}
@@ -1496,14 +1497,14 @@
                             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Icons.Crown className="w-5 h-5 text-yellow-400" /> Most Dedicated Players</h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {stats.leaderboard.map((player, i) => (
-                                    <div key={player.id} className={`p-4 rounded-xl border flex items-center gap-4 relative overflow-hidden ${i === 0 ? 'bg-yellow-900/20 border-yellow-500/50' : i === 1 ? 'bg-slate-800 border-slate-600' : 'bg-slate-900 border-slate-700'}`}>
-                                        <div className={`text-4xl font-black opacity-20 absolute right-2 top-0 pointer-events-none ${i === 0 ? 'text-yellow-500' : 'text-slate-500'}`}>#{i + 1}</div>
-                                        <div className="w-12 h-12 rounded-full border border-slate-600 bg-slate-800 flex items-center justify-center shrink-0">
-                                            {player.favoriteCommander ? <img src={player.favoriteCommander.image} className="w-full h-full rounded-full object-cover" /> : <Icons.User className="w-6 h-6 text-slate-500" />}
+                                    <div key={player.id} className={`p-4 rounded-xl border flex items-center gap-4 relative overflow-hidden ${i === 0 ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-[var(--bg-card)] border-[var(--border)]'}`}>
+                                        <div className={`text-4xl font-black opacity-20 absolute right-2 top-0 pointer-events-none ${i === 0 ? 'text-yellow-500' : 'text-[var(--text-faint)]'}`}>#{i + 1}</div>
+                                        <div className="w-12 h-12 rounded-full border border-[var(--border)] bg-[var(--bg-secondary)] flex items-center justify-center shrink-0">
+                                            {player.favoriteCommander ? <img src={player.favoriteCommander.image} className="w-full h-full rounded-full object-cover" /> : <Icons.User className="w-6 h-6 text-[var(--text-faint)]" />}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-white truncate max-w-[150px]">{player.displayName || 'Anonymous'}</div>
-                                            <div className="text-xs text-slate-400 font-bold uppercase">{player.stats?.gamesPlayed || 0} Games</div>
+                                            <div className="font-bold text-[var(--text-primary)] truncate max-w-[150px]">{player.displayName || 'Anonymous'}</div>
+                                            <div className="text-xs text-[var(--text-muted)] font-bold uppercase">{player.stats?.gamesPlayed || 0} Games</div>
                                         </div>
                                     </div>
                                 ))}
@@ -1513,48 +1514,48 @@
                         {/* Top Commanders (Existing) */}
                         {stats.deathStats && (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                <div className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border)] flex flex-col items-center">
                                     <Icons.Skull className="w-6 h-6 text-red-500 mb-2" />
-                                    <div className="text-2xl font-bold text-white">{stats.deathStats.standard || 0}</div>
-                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Combat/Life</div>
+                                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.deathStats.standard || 0}</div>
+                                    <div className="text-xs text-[var(--text-faint)] uppercase tracking-wider">Combat/Life</div>
                                 </div>
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                <div className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border)] flex flex-col items-center">
                                     <Icons.Sword className="w-6 h-6 text-orange-500 mb-2" />
-                                    <div className="text-2xl font-bold text-white">{stats.deathStats.commander || 0}</div>
-                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Commander Dmg</div>
+                                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.deathStats.commander || 0}</div>
+                                    <div className="text-xs text-[var(--text-faint)] uppercase tracking-wider">Commander Dmg</div>
                                 </div>
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                <div className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border)] flex flex-col items-center">
                                     <Icons.Droplet className="w-6 h-6 text-green-500 mb-2" />
-                                    <div className="text-2xl font-bold text-white">{stats.deathStats.poison || 0}</div>
-                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Poison</div>
+                                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.deathStats.poison || 0}</div>
+                                    <div className="text-xs text-[var(--text-faint)] uppercase tracking-wider">Poison</div>
                                 </div>
-                                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center">
+                                <div className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border)] flex flex-col items-center">
                                     <Icons.Book className="w-6 h-6 text-blue-500 mb-2" />
-                                    <div className="text-2xl font-bold text-white">{stats.deathStats.milled || 0}</div>
-                                    <div className="text-xs text-slate-500 uppercase tracking-wider">Milled Out</div>
+                                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.deathStats.milled || 0}</div>
+                                    <div className="text-xs text-[var(--text-faint)] uppercase tracking-wider">Milled Out</div>
                                 </div>
                             </div>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                            <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-                                <h2 className="text-xl font-semibold text-purple-300 mb-6 flex items-center justify-between">
+                            <div className="bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border)] backdrop-blur-sm">
+                                <h2 className="text-xl font-semibold theme-accent-text mb-6 flex items-center justify-between">
                                     <span>Top 5 Commanders</span>
-                                    <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-1 rounded-full">All Time</span>
+                                    <span className="text-xs font-normal text-[var(--text-faint)] bg-[var(--bg-card)] px-2 py-1 rounded-full">All Time</span>
                                 </h2>
                                 <div className="space-y-4">
                                     {stats.topCommanders.length === 0 ? (
-                                        <div className="text-slate-500 text-center py-10">No stats recorded yet. Play a game!</div>
+                                        <div className="text-[var(--text-faint)] text-center py-10">No stats recorded yet. Play a game!</div>
                                     ) : (
                                         stats.topCommanders.map((cmd, index) => (
-                                            <div key={cmd.name} className="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all border border-transparent hover:border-purple-500/30 group">
-                                                <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-slate-400 text-black' : index === 2 ? 'bg-orange-700 text-white' : 'bg-slate-700 text-slate-400'}`}>{index + 1}</div>
+                                            <div key={cmd.name} className="flex items-center gap-4 p-3 bg-[var(--bg-card)]/50 rounded-xl hover:bg-[var(--bg-elevated)] transition-all border border-transparent hover:border-[var(--accent)]/30 group">
+                                                <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-slate-400 text-black' : index === 2 ? 'bg-orange-700 text-white' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{index + 1}</div>
                                                 <div className="w-12 h-12 rounded-full overflow-hidden bg-black shrink-0">
                                                     <img src={cmd.image} alt={cmd.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="text-white font-medium truncate">{cmd.name}</div>
-                                                    <div className="text-xs text-slate-400">{cmd.count} plays</div>
+                                                    <div className="text-[var(--text-primary)] font-medium truncate">{cmd.name}</div>
+                                                    <div className="text-xs text-[var(--text-muted)]">{cmd.count} plays</div>
                                                 </div>
                                                 {index === 0 && <Icons.Crown className="w-5 h-5 text-yellow-500" />}
                                             </div>
@@ -1562,18 +1563,18 @@
                                     )}
                                 </div>
                             </div>
-                            <div className="relative group rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-900 min-h-[400px] flex items-center justify-center bg-slate-900">
+                            <div className="relative group rounded-2xl overflow-hidden shadow-2xl border-4 border-[var(--border)] min-h-[400px] flex items-center justify-center bg-[var(--bg-secondary)]">
                                 {stats.topCommander ? (
                                     <>
                                         <img src={stats.topCommander.image} alt={stats.topCommander.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)] via-transparent to-transparent opacity-90"></div>
                                         <div className="absolute bottom-0 left-0 right-0 p-8">
                                             <div className="flex items-center gap-2 text-yellow-500 mb-2 font-bold tracking-wider text-sm uppercase">
                                                 <Icons.Crown className="w-4 h-4" />
                                                 Most Popular Commander
                                             </div>
-                                            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight drop-shadow-lg">{stats.topCommander.name}</h2>
-                                            <div className="mt-4 inline-flex items-center gap-2 bg-purple-600/90 text-white px-4 py-2 rounded-full backdrop-blur-md font-medium shadow-lg">
+                                            <h2 className="text-4xl md:text-5xl font-black text-[var(--text-primary)] leading-tight drop-shadow-lg">{stats.topCommander.name}</h2>
+                                            <div className="mt-4 inline-flex items-center gap-2 bg-[var(--accent)]/90 text-white px-4 py-2 rounded-full backdrop-blur-md font-medium shadow-lg">
                                                 {stats.topCommander.count} Total Picks
                                             </div>
                                         </div>
@@ -2514,18 +2515,18 @@
                     if (parts.length === 2) {
                         return (
                             <div className={`flex flex-col ${isMyMsg ? 'items-end' : 'items-start'}`}>
-                                <div className="text-[10px] text-slate-500 px-1 mb-0.5">{msg.sender}</div>
-                                <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words relative overflow-visible ${isMyMsg ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                                <div className="text-[10px] text-[var(--text-faint)] px-1 mb-0.5">{msg.sender}</div>
+                                <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words relative overflow-visible ${isMyMsg ? 'bg-[var(--accent)] text-white rounded-br-none shadow-lg shadow-purple-900/10' : 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border)] rounded-bl-none'}`}>
                                     <span>{parts[0]}</span>
                                     <span
-                                        className="font-bold underline decoration-dotted cursor-pointer relative inline-block text-purple-200 hover:text-white"
+                                        className="font-bold underline decoration-dotted cursor-pointer relative inline-block theme-accent-text hover:opacity-80"
                                         onMouseEnter={() => setShowTooltip(true)}
                                         onMouseLeave={() => setShowTooltip(false)}
                                         onClick={(e) => { e.stopPropagation(); setShowTooltip(false); onViewCard(msg.card); }}
                                     >
                                         {msg.card.name}
                                         {showTooltip && (
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-xl shadow-2xl border-2 border-slate-600/50 z-50 animate-in fade-in zoom-in-95 pointer-events-none bg-slate-900 overflow-hidden">
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-xl shadow-2xl border-2 border-[var(--border)] z-50 animate-in fade-in zoom-in-95 pointer-events-none bg-[var(--bg-secondary)] overflow-hidden">
                                                 <img src={msg.card.image} alt={msg.card.name} className="w-full h-auto object-cover" />
                                             </div>
                                         )}
@@ -2539,8 +2540,8 @@
 
                 return (
                     <div className={`flex flex-col ${isMyMsg ? 'items-end' : 'items-start'}`}>
-                        <div className="text-[10px] text-slate-500 px-1 mb-0.5">{msg.sender}</div>
-                        <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words ${isMyMsg ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'}`}>
+                        <div className="text-[10px] text-[var(--text-faint)] px-1 mb-0.5">{msg.sender}</div>
+                        <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] break-words ${isMyMsg ? 'bg-[var(--accent)] text-white rounded-br-none shadow-lg shadow-purple-900/10' : 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border)] rounded-bl-none'}`}>
                             {msg.text}
                         </div>
                     </div>
@@ -2674,48 +2675,48 @@
 
             if (joinedRoom) {
                 return (
-                    <div className="fixed inset-0 flex flex-col bg-slate-950 overflow-hidden z-[60]">
+                    <div className="fixed inset-0 flex flex-col bg-[var(--bg-primary)] overflow-hidden z-[60]">
                         {/* 1. Header Area (HUD + Room Info) */}
-                        <div className="flex-none bg-slate-900 border-b border-slate-700 shadow-xl z-50">
+                        <div className="flex-none bg-[var(--bg-secondary)] border-b border-[var(--border)] shadow-xl z-50">
                             {/* Top HUD Row */}
-                            <div className="flex items-center justify-between px-4 py-3 h-16 border-b border-slate-800">
+                            <div className="flex items-center justify-between px-4 py-3 h-16 border-b border-[var(--border-light)]">
                                 <div className="flex items-center gap-2">
-                                    <div className="p-2 bg-purple-600/20 rounded-lg hidden md:block"><Icons.Wifi className="text-purple-400 w-4 h-4 animate-pulse" /></div>
-                                    <span className="text-white font-black tracking-tight">{joinedRoom}</span>
-                                    <span className="text-slate-500 text-xs font-bold bg-slate-800 px-2 py-0.5 rounded-full">{players.length}P</span>
+                                    <div className="p-2 bg-[var(--accent-light)] rounded-lg hidden md:block"><Icons.Wifi className="text-[var(--accent)] w-4 h-4 animate-pulse" /></div>
+                                    <span className="text-[var(--text-primary)] font-black tracking-tight">{joinedRoom}</span>
+                                    <span className="text-[var(--text-muted)] text-xs font-bold bg-[var(--bg-card)] px-2 py-0.5 rounded-full">{players.length}P</span>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl border border-slate-700/50">
-                                        <Icons.Clock className="w-4 h-4 text-slate-500" />
-                                        <span className="font-mono text-white font-black tracking-widest text-lg">{displayTimer}</span>
+                                    <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-xl border border-[var(--border-light)]">
+                                        <Icons.Clock className="w-4 h-4 text-[var(--text-muted)]" />
+                                        <span className="font-mono text-[var(--text-primary)] font-black tracking-widest text-lg">{displayTimer}</span>
                                     </div>
                                     {isHost && (
                                         <div className="hidden sm:flex items-center gap-2">
-                                            <button onClick={toggleOnlineTimer} className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${roomData?.timer?.isRunning ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-green-600 text-white shadow-lg shadow-green-900/20 hover:scale-105'}`}>{roomData?.timer?.isRunning ? 'Pause' : 'Start'}</button>
-                                            <button onClick={resetOnlineTimer} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white border border-slate-700"><Icons.RotateCcw className="w-4 h-4" /></button>
+                                            <button onClick={toggleOnlineTimer} className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${roomData?.timer?.isRunning ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'theme-accent text-white shadow-lg shadow-purple-900/20 hover:scale-105'}`}>{roomData?.timer?.isRunning ? 'Pause' : 'Start'}</button>
+                                            <button onClick={resetOnlineTimer} className="p-2 rounded-xl bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)]"><Icons.RotateCcw className="w-4 h-4" /></button>
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => setShowToolsModal(true)} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700" title="Dice & Counters"><Icons.Dices className="w-5 h-5 text-purple-400" /></button>
-                                    <button onClick={() => setShowHistoryModal(true)} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700" title="Game Log"><Icons.Clock className="w-5 h-5 text-purple-400" /></button>
-                                    <button onClick={() => { setShowChat(!showChat); if (!showChat) setUnreadCount(0); }} className="relative p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700">
-                                        <Icons.MessageCircle className="w-5 h-5 text-purple-400" />
-                                        {unreadCount > 0 && (<div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900 animate-bounce" />)}
+                                    <button onClick={() => setShowToolsModal(true)} className="p-2 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-xl border border-[var(--border)]" title="Dice & Counters"><Icons.Dices className="w-5 h-5 text-[var(--accent)]" /></button>
+                                    <button onClick={() => setShowHistoryModal(true)} className="p-2 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-xl border border-[var(--border)]" title="Game Log"><Icons.Clock className="w-5 h-5 text-[var(--accent)]" /></button>
+                                    <button onClick={() => { setShowChat(!showChat); if (!showChat) setUnreadCount(0); }} className="relative p-2 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-xl border border-[var(--border)]">
+                                        <Icons.MessageCircle className="w-5 h-5 text-[var(--accent)]" />
+                                        {unreadCount > 0 && (<div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[var(--bg-primary)] animate-bounce" />)}
                                     </button>
-                                    <button onClick={() => setShowCardSearch(true)} className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-lg shadow-purple-900/20" title="Search Database"><Icons.Search className="w-5 h-5" /></button>
+                                    <button onClick={() => setShowCardSearch(true)} className="p-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white rounded-xl shadow-lg shadow-purple-900/20" title="Search Database"><Icons.Search className="w-5 h-5" /></button>
                                 </div>
                             </div>
 
                             {/* Actions Row */}
-                            <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 backdrop-blur-sm">
+                            <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] backdrop-blur-sm">
                                 <div className="flex gap-2">
-                                    <button onClick={copyRoomLink} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white px-3 py-1.5 rounded-lg border border-purple-500/30 transition-all"><Icons.Share className="w-3 h-3" /> Share</button>
+                                    <button onClick={copyRoomLink} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white px-3 py-1.5 rounded-lg border border-[var(--accent-ring)] transition-all"><Icons.Share className="w-3 h-3" /> Share</button>
                                     {isHost && (
                                         <>
-                                            <button onClick={() => { if (confirmReset) resetGame(); else { setConfirmReset(true); setTimeout(() => setConfirmReset(false), 3000); } }} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${confirmReset ? 'bg-orange-600 text-white border-orange-500' : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'}`}><Icons.Refresh className="w-3 h-3" /> {confirmReset ? 'Confirm Reset?' : 'Reset Game'}</button>
+                                            <button onClick={() => { if (confirmReset) resetGame(); else { setConfirmReset(true); setTimeout(() => setConfirmReset(false), 3000); } }} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${confirmReset ? 'bg-orange-600 text-white border-orange-500' : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border-[var(--border)]'}`}><Icons.Refresh className="w-3 h-3" /> {confirmReset ? 'Confirm Reset?' : 'Reset Game'}</button>
                                             <button onClick={() => { if (confirmClose) closeRoom(); else { setConfirmClose(true); setTimeout(() => setConfirmClose(false), 3000); } }} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${confirmClose ? 'bg-red-600 text-white border-red-500' : 'bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white border-red-500/30'}`}><Icons.Trash className="w-3 h-3" /> {confirmClose ? 'Confirm Close?' : 'Close Room'}</button>
                                         </>
                                     )}
@@ -2724,7 +2725,7 @@
                                     {winnerId && (
                                         <button onClick={() => setShowMatchResult(true)} className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-yellow-500/20 animate-pulse hover:scale-105 transition-transform"><Icons.Share className="w-3 h-3" /> Results</button>
                                     )}
-                                    <button onClick={handleLeaveRoom} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-slate-800/50 text-slate-500 hover:bg-red-600/20 hover:text-red-400 px-3 py-1.5 rounded-lg border border-slate-700 transition-all"><Icons.LogOut className="w-3 h-3" /> Leave</button>
+                                    <button onClick={handleLeaveRoom} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg border border-[var(--border)] transition-all"><Icons.LogOut className="w-3 h-3" /> Leave</button>
                                 </div>
                             </div>
                         </div>
@@ -2741,7 +2742,7 @@
                                             players={players}
                                             isLocal={false}
                                             isWinner={p.id === winnerId}
-                                            color={p.id === user.uid ? 'bg-slate-800 ring-2 ring-purple-500/50 shadow-2xl shadow-purple-500/10' : 'bg-slate-800 shadow-xl'}
+                                            color={p.id === user.uid ? 'theme-bg-card ring-2 theme-ring shadow-2xl shadow-purple-500/10' : 'theme-bg-card shadow-xl'}
                                             canKick={isHost && p.id !== user.uid}
                                             onKick={() => handleKickPlayer(p.id)}
                                             onUpdate={(id, updates) => { if (id === user.uid) updateSelf(updates); }}
@@ -2768,8 +2769,8 @@
                         )}
 
                         {showChat && (
-                            <div className="fixed top-20 right-4 w-96 max-w-[calc(100vw-2rem)] h-[70vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col animate-in fade-in slide-in-from-right-4">
-                                <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-2xl"><span className="font-black text-white text-xs uppercase tracking-widest italic">Encrypted Chat</span><button onClick={() => setShowChat(false)} className="p-1 hover:bg-slate-700 rounded-full"><Icons.X className="w-4 h-4 text-slate-400" /></button></div>
+                            <div className="fixed top-20 right-4 w-96 max-w-[calc(100vw-2rem)] h-[70vh] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl shadow-2xl z-50 flex flex-col animate-in fade-in slide-in-from-right-4">
+                                <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)] rounded-t-2xl"><span className="font-black text-[var(--text-primary)] text-xs uppercase tracking-widest italic">Encrypted Chat</span><button onClick={() => setShowChat(false)} className="p-1 hover:bg-[var(--bg-elevated)] rounded-full"><Icons.X className="w-4 h-4 text-[var(--text-muted)]" /></button></div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                     {messages.length === 0 && <div className="text-center text-xs text-slate-600 py-10 font-medium">No tactical transmissions yet.</div>}
                                     {messages.map((m, i) => (
@@ -3118,7 +3119,7 @@
             };
 
             const NavItem = ({ id, label, icon: Icon }) => (
-                <button onClick={() => { setView(id); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === id ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white'} ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}>
+                <button onClick={() => { setView(id); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${view === id ? 'nav-active shadow-lg shadow-purple-500/20' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)]'} ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}>
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {!isSidebarCollapsed && label}
                 </button>
@@ -3129,44 +3130,44 @@
             const winnerId = (!isLocalSetup && activePlayers.length === 1 && localPlayers.length > 1) ? activePlayers[0].id : null;
 
             return (
-                <div className="bg-slate-950 min-h-screen text-slate-200 font-sans selection:bg-purple-500/30 overflow-hidden flex flex-col">
-                    <div className="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-20">
-                        <div className="flex items-center gap-2 text-white font-bold text-lg">
-                            <Icons.Shield className="text-purple-500 fill-current w-6 h-6" />
+                <div className="bg-[var(--bg-primary)] min-h-screen text-[var(--text-primary)] font-sans selection:bg-[var(--accent)] selection:text-white overflow-hidden flex flex-col">
+                    <div className="md:hidden bg-[var(--bg-secondary)] border-b border-[var(--border)] p-4 flex justify-between items-center z-20">
+                        <div className="flex items-center gap-2 text-[var(--text-primary)] font-bold text-lg">
+                            <Icons.Shield className="text-[var(--accent)] fill-current w-6 h-6" />
                             <span>Companion</span>
                         </div>
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-white">
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-[var(--text-primary)]">
                             {isMenuOpen ? <Icons.X className="w-6 h-6" /> : <Icons.Menu className="w-6 h-6" />}
                         </button>
                     </div>
 
                     <div className="flex flex-1 overflow-hidden relative">
-                        <div className={`fixed md:relative inset-y-0 left-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 z-30 flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-                            <div className="p-4 border-b border-slate-800 hidden md:flex items-center justify-between">
+                        <div className={`fixed md:relative inset-y-0 left-0 ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-[var(--bg-secondary)] border-r border-[var(--border)] transform transition-transform duration-300 z-30 flex flex-col ${isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+                            <div className="p-4 border-b border-[var(--border)] hidden md:flex items-center justify-between">
                                 <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
-                                    <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
+                                    <div className="w-10 h-10 bg-[var(--accent)] rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
                                         <Icons.Shield className="text-white w-6 h-6" />
                                     </div>
                                     {!isSidebarCollapsed && (
                                         <div className="overflow-hidden whitespace-nowrap">
-                                            <h1 className="font-bold text-white text-lg leading-tight">Commander</h1>
-                                            <div className="text-xs text-purple-400 font-medium">Companion App</div>
+                                            <h1 className="font-bold text-[var(--text-primary)] text-lg leading-tight">Commander</h1>
+                                            <div className="text-xs text-[var(--accent)] font-medium">Companion App</div>
                                         </div>
                                     )}
                                 </div>
-                                {!isSidebarCollapsed && <button onClick={() => setIsSidebarCollapsed(true)} className="text-slate-500 hover:text-white"><Icons.ChevronLeft className="w-5 h-5" /></button>}
+                                {!isSidebarCollapsed && <button onClick={() => setIsSidebarCollapsed(true)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"><Icons.ChevronLeft className="w-5 h-5" /></button>}
                             </div>
                             {isSidebarCollapsed && (
-                                <div className="p-2 flex justify-center border-b border-slate-800">
-                                    <button onClick={() => setIsSidebarCollapsed(false)} className="text-slate-500 hover:text-white p-2"><Icons.ChevronRight className="w-5 h-5" /></button>
+                                <div className="p-2 flex justify-center border-b border-[var(--border)]">
+                                    <button onClick={() => setIsSidebarCollapsed(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-2"><Icons.ChevronRight className="w-5 h-5" /></button>
                                 </div>
                             )}
 
-                            <div className="p-4 space-y-2 flex-1">
-                                {!isSidebarCollapsed && <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-2 mt-4">Game Modes</div>}
+                            <div className="p-4 space-y-2 flex-1 scroll-container overflow-y-auto">
+                                {!isSidebarCollapsed && <div className="text-xs font-bold text-[var(--text-faint)] uppercase tracking-wider px-4 mb-2 mt-4">Game Modes</div>}
                                 <NavItem id="local" label="Local Game" icon={Icons.Users} />
                                 <NavItem id="online" label="Online Room" icon={Icons.Wifi} />
-                                {!isSidebarCollapsed && <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-2 mt-6">Data & Info</div>}
+                                {!isSidebarCollapsed && <div className="text-xs font-bold text-[var(--text-faint)] uppercase tracking-wider px-4 mb-2 mt-6">Data & Info</div>}
                                 <NavItem id="profile" label="My Profile" icon={Icons.User} />
                                 <NavItem id="stats" label="Global Stats" icon={Icons.BarChart2} />
                                 <NavItem id="settings" label="Settings" icon={Icons.Sliders} />
@@ -3174,21 +3175,21 @@
                                 <NavItem id="changes" label="Changelog" icon={Icons.FileText} />
                             </div>
 
-                            <div className="p-4 border-t border-slate-800">
+                            <div className="p-4 border-t border-[var(--border)]">
                                 {view === 'local' && (
-                                    <button onClick={resetLocalGame} className={`w-full flex items-center gap-2 bg-slate-800 hover:bg-red-900/30 text-slate-300 hover:text-red-400 p-3 rounded-lg transition-colors border border-slate-700 hover:border-red-800 ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
+                                    <button onClick={resetLocalGame} className={`w-full flex items-center gap-2 bg-[var(--bg-card)] hover:bg-red-900/10 text-[var(--text-muted)] hover:text-red-500 p-3 rounded-lg transition-colors border border-[var(--border-light)] hover:border-red-900/30 ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
                                         <Icons.RotateCcw className="w-4 h-4" />
                                         {!isSidebarCollapsed && <span>Reset Game</span>}
                                     </button>
                                 )}
-                                {!isSidebarCollapsed && <div className="mt-4 text-center text-xs text-slate-600">{user ? `ID: ${user.uid.slice(0, 6)}...` : 'Connecting...'}</div>}
+                                {!isSidebarCollapsed && <div className="mt-4 text-center text-[10px] font-bold text-[var(--text-faint)] uppercase tracking-tighter">{user ? `NODE: ${user.uid.slice(0, 8)}` : 'Connecting...'}</div>}
                             </div>
                         </div>
 
-                        {isMenuOpen && <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setIsMenuOpen(false)} />}
+                        {isMenuOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden" onClick={() => setIsMenuOpen(false)} />}
 
-                        {/* --- FIX 2: Added min-h-0 to allow proper flex scrolling on Android --- */}
-                        <main className="flex-1 relative overflow-hidden bg-slate-950 flex flex-col min-h-0">
+                        {/* --- Main Content Area --- */}
+                        <main className="flex-1 relative overflow-hidden bg-[var(--bg-primary)] flex flex-col min-h-0">
                             {view === 'local' && (
                                 <>
                                     {isLocalSetup ? (
@@ -3196,11 +3197,11 @@
                                     ) : (
                                         <div className="relative h-full w-full">
                                             {/* Game Timer HUD */}
-                                            <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center gap-3 p-2 bg-black/30 backdrop-blur-sm pointer-events-none">
-                                                <span className="font-mono text-white font-bold tracking-widest text-lg drop-shadow">{timer.display}</span>
+                                            <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center gap-3 p-2 bg-[var(--bg-secondary)]/60 backdrop-blur-md pointer-events-none border-b border-[var(--border)]/20">
+                                                <span className="font-mono text-[var(--text-primary)] font-bold tracking-widest text-lg drop-shadow">{timer.display}</span>
                                                 <div className="flex gap-1 pointer-events-auto">
-                                                    <button onClick={timer.isRunning ? timer.pause : timer.start} className="p-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-xs transition">{timer.isRunning ? '⏸' : '▶'}</button>
-                                                    <button onClick={timer.reset} className="p-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-xs transition">🔄</button>
+                                                    <button onClick={timer.isRunning ? timer.pause : timer.start} className="p-1 px-3 bg-[var(--accent)]/10 hover:bg-[var(--accent)] hover:text-white rounded-full text-[var(--accent)] text-xs transition-all border border-[var(--accent)]/30 font-bold">{timer.isRunning ? 'PAUSE' : 'START'}</button>
+                                                    <button onClick={timer.reset} className="p-1 bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] rounded-full text-[var(--text-muted)] text-xs transition-all border border-[var(--border)]">🔄</button>
                                                 </div>
                                             </div>
 
@@ -3227,9 +3228,9 @@
                                                 <div className="pointer-events-auto relative flex flex-col items-center">
                                                     <button
                                                         onClick={() => setShowLocalMenu(!showLocalMenu)}
-                                                        className={`p-4 rounded-full shadow-2xl transition-all duration-300 border-4 border-slate-900 ${showLocalMenu ? 'bg-purple-600 rotate-90 scale-110' : 'bg-slate-800 hover:bg-slate-700'}`}
+                                                        className={`p-4 rounded-full shadow-2xl transition-all duration-300 border-4 border-[var(--bg-primary)] ${showLocalMenu ? 'bg-[var(--accent)] rotate-90 scale-110 shadow-[var(--accent-ring)]' : 'bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] border-[var(--border)]'}`}
                                                     >
-                                                        <Icons.Wrench className="w-6 h-6 text-white" />
+                                                        <Icons.Wrench className={`w-6 h-6 ${showLocalMenu ? 'text-white' : 'text-[var(--text-primary)]'}`} />
                                                     </button>
 
                                                     {/* Radial/Popout Menu Options */}
@@ -3237,14 +3238,14 @@
                                                         <div className="absolute flex flex-col gap-3 items-center" style={{ top: '4.5rem' }}>
                                                             <button
                                                                 onClick={resetLocalGame}
-                                                                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-red-600 transition-colors animate-in fade-in slide-in-from-top-2 whitespace-nowrap"
+                                                                className="flex items-center gap-2 bg-[var(--bg-card)] text-[var(--text-primary)] px-4 py-2 rounded-full shadow-xl border border-[var(--border)] hover:bg-red-600 hover:text-white transition-colors animate-in fade-in slide-in-from-top-2 whitespace-nowrap"
                                                             >
                                                                 <Icons.RotateCcw className="w-4 h-4" /> New Game
                                                             </button>
                                                             <button
                                                                 onClick={undoLocalGame}
                                                                 disabled={undoStack.current.length === 0}
-                                                                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-blue-600 transition-colors animate-in fade-in slide-in-from-top-2 delay-[30ms] whitespace-nowrap disabled:opacity-40"
+                                                                className="flex items-center gap-2 bg-[var(--bg-card)] text-[var(--text-primary)] px-4 py-2 rounded-full shadow-xl border border-[var(--border)] hover:bg-[var(--accent)] hover:text-white transition-colors animate-in fade-in slide-in-from-top-2 delay-[30ms] whitespace-nowrap disabled:opacity-40"
                                                             >
                                                                 <Icons.Undo className="w-4 h-4" /> Undo
                                                             </button>
