@@ -2731,11 +2731,11 @@
                         </div>
 
                         {/* 2. Main Body Container (Scrollable) */}
-                        <div className="flex-1 overflow-y-auto scroll-container p-4 pb-32">
-                            {/* Player Grid - Removed h-full and auto-rows-fr */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1920px] mx-auto">
+                        <div className="flex-1 overflow-y-auto scroll-container p-4 pb-32 flex flex-col">
+                            {/* Player Grid - Using auto-rows-fr to stretch vertically */}
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1920px] mx-auto w-full auto-rows-fr">
                                 {[...players].sort((a, b) => a.id.localeCompare(b.id)).map(p => (
-                                    <div key={p.id} className="h-full min-h-[400px]">
+                                    <div key={p.id} className="h-full">
                                         <PlayerCard
                                             {...p}
                                             isGuest={p.isGuest}
@@ -3205,7 +3205,7 @@
                                                 </div>
                                             </div>
 
-                                            <div className={`absolute inset-0 grid gap-2 p-2 pt-16 pb-20 overflow-y-auto scroll-container ${localPlayers.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' :
+                                            <div className={`absolute inset-0 grid gap-2 p-2 pt-16 pb-20 overflow-y-auto scroll-container auto-rows-fr ${localPlayers.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' :
                                                 localPlayers.length <= 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' :
                                                     'grid-cols-2 lg:grid-cols-3'
                                                 }`}>
