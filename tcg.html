@@ -1340,6 +1340,175 @@
             );
         };
 
+        const MatchResultExportModal = ({ players, winnerId, roomName, duration, onClose }) => {
+            const canvasRef = useRef(null);
+            const [generating, setGenerating] = useState(false);
+            const [previewUrl, setPreviewUrl] = useState('');
+
+            const winner = players.find(p => p.id === winnerId);
+
+            useEffect(() => {
+                const generate = async () => {
+                    setGenerating(true);
+                    const canvas = canvasRef.current;
+                    const ctx = canvas.getContext('2d');
+
+                    // Background Gradient
+                    const grad = ctx.createLinearGradient(0, 0, 800, 600);
+                    grad.addColorStop(0, '#1e1b4b');
+                    grad.addColorStop(1, '#020617');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 800, 600);
+
+                    // Decorative elements
+                    ctx.strokeStyle = 'rgba(147, 51, 234, 0.15)';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 20; i++) {
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 800, Math.random() * 600, Math.random() * 80, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    // Header
+                    ctx.fillStyle = '#9333ea';
+                    ctx.font = '900 32px Inter, sans-serif';
+                    ctx.fillText('MATCH SUMMARY', 50, 60);
+
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = 'bold 16px Inter, sans-serif';
+                    ctx.fillText(roomName.toUpperCase(), 50, 85);
+
+                    // Winner Badge
+                    if (winner) {
+                        ctx.fillStyle = 'rgba(147, 51, 234, 0.2)';
+                        if (ctx.roundRect) ctx.roundRect(50, 110, 700, 140, 20);
+                        else ctx.fillRect(50, 110, 700, 140);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.font = '900 20px Inter, sans-serif';
+                        ctx.fillText('🏆 WINNER', 80, 150);
+
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '900 48px Inter, sans-serif';
+                        ctx.fillText(winner.name, 80, 205);
+
+                        if (winner.commander?.name) {
+                            ctx.fillStyle = '#d8b4fe';
+                            ctx.font = 'bold 20px Inter, sans-serif';
+                            ctx.fillText(winner.commander.name, 80, 230);
+                        }
+                    }
+
+                    // Players Section
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '900 24px Inter, sans-serif';
+                    ctx.fillText('Final Standings', 50, 300);
+
+                    players.slice(0, 5).forEach((p, i) => {
+                        const y = 350 + (i * 50);
+                        ctx.fillStyle = p.isDead ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.08)';
+                        if (ctx.roundRect) ctx.roundRect(50, y - 35, 700, 40, 10);
+                        else ctx.fillRect(50, y - 35, 700, 40);
+                        ctx.fill();
+
+                        ctx.fillStyle = p.isDead ? '#475569' : '#f1f5f9';
+                        ctx.font = 'bold 18px Inter, sans-serif';
+                        ctx.fillText(p.name, 70, y - 8);
+
+                        ctx.font = 'bold 16px Inter, sans-serif';
+                        ctx.textAlign = 'right';
+                        ctx.fillText(p.isDead ? 'ELIMINATED' : `${p.life} HP`, 730, y - 8);
+                        ctx.textAlign = 'left';
+                    });
+
+                    // Footer
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(0, 540, 800, 60);
+
+                    ctx.fillStyle = '#a78bfa';
+                    ctx.font = '900 14px Inter, sans-serif';
+                    ctx.fillText('CARDBOARD BONFIRE • MTG COMPANION', 50, 575);
+
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = 'bold 14px Inter, sans-serif';
+                    ctx.fillText(`Duration: ${duration} • ${new Date().toLocaleDateString()}`, 750, 575);
+                    ctx.textAlign = 'left';
+
+                    setPreviewUrl(canvas.toDataURL('image/png'));
+                    setGenerating(false);
+                };
+                generate();
+            }, [players, winnerId, roomName, duration]);
+
+            const share = async () => {
+                const blob = await (await fetch(previewUrl)).blob();
+                const file = new File([blob], 'match-result.png', { type: 'image/png' });
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'MTG Match Result',
+                            text: `Epic game in ${roomName}!`
+                        });
+                    } catch (e) {
+                        const link = document.createElement('a');
+                        link.download = `match-${roomName}.png`;
+                        link.href = previewUrl;
+                        link.click();
+                    }
+                } else {
+                    const link = document.createElement('a');
+                    link.download = `match-${roomName}.png`;
+                    link.href = previewUrl;
+                    link.click();
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                            <div>
+                                <h2 className="text-2xl font-black text-white tracking-tight">Share Results</h2>
+                                <p className="text-sm text-slate-500 font-medium uppercase tracking-wider">Generate match summary card</p>
+                            </div>
+                            <button onClick={onClose} className="p-3 hover:bg-slate-800 rounded-2xl transition-all border border-transparent hover:border-slate-700 text-slate-400 hover:text-white"><Icons.X className="w-6 h-6" /></button>
+                        </div>
+
+                        <div className="p-10 flex flex-col items-center">
+                            <canvas ref={canvasRef} width="800" height="600" className="hidden" />
+                            {generating ? (
+                                <div className="w-full aspect-[4/3] bg-slate-950 rounded-3xl flex items-center justify-center border border-slate-800 shadow-inner">
+                                    <div className="text-center">
+                                        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                                        <div className="text-slate-500 font-black uppercase tracking-widest text-xs">Forging Result Card...</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="relative group perspective-1000">
+                                    <img src={previewUrl} className="w-full h-auto rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] border border-slate-700/50 transition-transform duration-500 group-hover:scale-[1.02]" alt="Result Preview" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-purple-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-3xl backdrop-blur-[2px]">
+                                        <div className="bg-white/10 p-5 rounded-full text-white backdrop-blur-md border border-white/20 scale-90 group-hover:scale-100 transition-transform duration-500">
+                                            <Icons.Share className="w-10 h-10" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4 w-full mt-10">
+                                <button onClick={onClose} className="py-5 rounded-3xl font-black uppercase tracking-widest text-xs bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/50">Close</button>
+                                <button onClick={share} className="py-5 rounded-3xl font-black uppercase tracking-widest text-xs bg-purple-600 text-white hover:bg-purple-500 transition-all shadow-[0_10px_30px_-10px_rgba(147,51,234,0.5)] flex items-center justify-center gap-3">
+                                    <Icons.Share className="w-5 h-5" /> {navigator.share ? 'Share Card' : 'Download Image'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // 5. Stats Page
         const StatsPage = ({ user }) => {
             const [stats, setStats] = useState({ topCommanders: [], topCommander: null, deathStats: null, leaderboard: [] });
@@ -1691,8 +1860,15 @@
                                     </div>
                                 </div>
 
-                                {/* Milled */}
-                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><span className="text-sm font-semibold text-blue-400 flex items-center gap-2 mb-2"><Icons.Book className="w-4 h-4" /> Library Status</span><button onClick={toggleMilled} className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${milled ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>{milled ? '📚 Milled Out' : 'Mark as Milled Out'}</button></div>
+                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-semibold text-blue-400 flex items-center gap-2"><Icons.Book className="w-4 h-4" /> Library Status</span>
+                                        <span className="text-xs text-slate-500">Die if Milled</span>
+                                    </div>
+                                    <button onClick={toggleMilled} className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${milled ? 'bg-red-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>
+                                        {milled ? '📚 Milled Out (Dead)' : 'Mark as Milled Out'}
+                                    </button>
+                                </div>
 
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-red-400 flex items-center gap-2"><Icons.Sword className="w-4 h-4" /> Commander Damage</span><span className="text-xs text-slate-500">Die at 21 per Cmdr</span></div><div className="space-y-2">
                                     {[...players].filter(p => p.id !== id).sort((a, b) => String(a.id).localeCompare(String(b.id))).map(opponent => {
@@ -1738,8 +1914,6 @@
                                         );
                                     })}
                                 </div></div>
-
-                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-blue-400 flex items-center gap-2"><Icons.Book className="w-4 h-4" /> Library (Mill)</span><span className="text-xs text-slate-500">Die if Milled</span></div><div className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><span className="text-sm text-slate-300 ml-2">Milled Out?</span><button onClick={toggleMilled} className={`px-4 py-2 rounded-lg font-bold transition-colors ${milled ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}>{milled ? "YES (Dead)" : "NO"}</button></div></div>
 
                                 {/* KICK PLAYER BUTTON FOR HOST */}
                                 {canKick && (
@@ -2061,6 +2235,8 @@
             const [showToolsModal, setShowToolsModal] = useState(false);
             const [showHistoryModal, setShowHistoryModal] = useState(false);
             const [roomLog, setRoomLog] = useState([]);
+            const [showMatchResult, setShowMatchResult] = useState(false);
+            const [displayTimer, setDisplayTimer] = useState("00:00:00");
 
             const [rooms, setRooms] = useState([]);
             const [playerName, setPlayerName] = useState('');
@@ -2215,8 +2391,19 @@
                         isGuest: user.isAnonymous
                     };
                     await setDoc(roomRef, {
-                        name: hostName, password: hostPassword, hostId: user.uid, createdAt: serverTimestamp(),
-                        lastActivity: serverTimestamp(), players: { [user.uid]: playerData }, log: [], messages: []
+                        name: hostName,
+                        password: hostPassword,
+                        hostId: user.uid,
+                        createdAt: serverTimestamp(),
+                        lastActivity: serverTimestamp(),
+                        players: { [user.uid]: playerData },
+                        log: [],
+                        messages: [],
+                        timer: {
+                            isRunning: false,
+                            startTime: null,
+                            offset: 0
+                        }
                     });
                     if (playerData.commander && hostName !== "Test") updateCommanderStat(playerData.commander);
                     isJoiningRef.current = true;
@@ -2267,6 +2454,7 @@
                         updates[`players.${p.id}.isDead`] = false;
                     });
                     updates.messages = arrayUnion({ sender: "System", text: "Game has been reset.", timestamp: Date.now() });
+                    updates.timer = { isRunning: false, offset: 0, startTime: null };
 
                     await updateDoc(roomRef, updates);
                     setConfirmReset(false);
@@ -2334,6 +2522,60 @@
                     console.error("Error kicking player:", e);
                 }
             };
+
+            // Online Timer Functions
+            const toggleOnlineTimer = async () => {
+                if (!joinedRoom || !isHost) return;
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
+                const timer = roomData?.timer || { isRunning: false, offset: 0, startTime: null };
+
+                if (timer.isRunning) {
+                    // Pause
+                    const elapsed = Date.now() - (timer.startTime?.toMillis?.() || timer.startTime || Date.now());
+                    await updateDoc(roomRef, {
+                        'timer.isRunning': false,
+                        'timer.offset': timer.offset + elapsed,
+                        'timer.startTime': null
+                    });
+                } else {
+                    // Start
+                    await updateDoc(roomRef, {
+                        'timer.isRunning': true,
+                        'timer.startTime': serverTimestamp()
+                    });
+                }
+            };
+
+            const resetOnlineTimer = async () => {
+                if (!joinedRoom || !isHost) return;
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
+                await updateDoc(roomRef, {
+                    'timer.isRunning': false,
+                    'timer.offset': 0,
+                    'timer.startTime': null
+                });
+            };
+
+            useEffect(() => {
+                if (!roomData?.timer) return;
+                const { isRunning, startTime, offset } = roomData.timer;
+
+                const update = () => {
+                    if (!isRunning) {
+                        setDisplayTimer(formatTime(offset));
+                        return;
+                    }
+                    const start = startTime?.toMillis?.() || startTime || Date.now();
+                    const elapsed = Date.now() - start + offset;
+                    setDisplayTimer(formatTime(elapsed));
+                };
+
+                update();
+                if (isRunning) {
+                    const interval = setInterval(update, 1000);
+                    return () => clearInterval(interval);
+                }
+            }, [roomData?.timer]);
 
             // --- FIX 1 (Cont): Listener ONLY listens ---
             const ChatMessage = ({ msg, isMyMsg, onViewCard }) => {
@@ -2505,12 +2747,38 @@
 
             if (joinedRoom) {
                 return (
-                    <div className="h-full flex flex-col relative">
-                        <div className="absolute top-4 right-4 md:right-8 z-30 flex items-center gap-2">
-                            <button onClick={() => setShowToolsModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600 transition-colors">
+                    <div className="h-full flex flex-col relative pt-14">
+                        {/* Synced Timer HUD */}
+                        <div className="absolute top-0 left-0 right-0 z-40 bg-slate-900 shadow-md border-b border-slate-700 flex items-center justify-center gap-4 py-2 px-4 h-14">
+                            <div className="flex items-center gap-2">
+                                <Icons.Clock className="w-4 h-4 text-slate-500" />
+                                <span className="font-mono text-white font-black tracking-widest text-lg">{displayTimer}</span>
+                            </div>
+                            {isHost && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={toggleOnlineTimer}
+                                        className={`px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 ${roomData?.timer?.isRunning ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30' : 'bg-green-600 text-white hover:bg-green-500 shadow-green-900/20'}`}
+                                    >
+                                        {roomData?.timer?.isRunning ? '⏸ Pause' : '▶ Start Timer'}
+                                    </button>
+                                    <button onClick={resetOnlineTimer} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700 transition-colors" title="Reset Timer">
+                                        <Icons.RotateCcw className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="absolute top-2 right-4 md:right-8 z-50 flex items-center gap-2 mt-1">
+                            {winnerId && (
+                                <button onClick={() => setShowMatchResult(true)} className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-xl shadow-lg border border-purple-400 flex items-center gap-2 text-xs font-bold transition-all animate-bounce">
+                                    <Icons.Share className="w-4 h-4" /> Share Results
+                                </button>
+                            )}
+                            <button onClick={() => setShowToolsModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-xl shadow-lg border border-slate-600 transition-colors">
                                 <Icons.Dices className="w-5 h-5 text-purple-400" />
                             </button>
-                            <button onClick={() => setShowHistoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600">
+                            <button onClick={() => setShowHistoryModal(true)} className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-xl shadow-lg border border-slate-600">
                                 <Icons.Clock className="w-5 h-5 text-purple-400" />
                             </button>
                             <button onClick={() => { setShowChat(!showChat); if (!showChat) setUnreadCount(0); }} className="relative bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full shadow-lg border border-slate-600 transition-colors">
@@ -2525,6 +2793,15 @@
 
                         {showToolsModal && <GameToolsModal players={players} onClose={() => setShowToolsModal(false)} />}
                         {showHistoryModal && <HistoryModal log={roomLog} onClose={() => setShowHistoryModal(false)} />}
+                        {showMatchResult && (
+                            <MatchResultExportModal
+                                players={players}
+                                winnerId={winnerId}
+                                roomName={joinedRoom}
+                                duration={displayTimer}
+                                onClose={() => setShowMatchResult(false)}
+                            />
+                        )}
 
                         {showChat && (
                             <div className="absolute top-16 right-4 w-80 max-w-[calc(100vw-2rem)] h-[60vh] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-40 flex flex-col animate-in fade-in slide-in-from-top-2">
