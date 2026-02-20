@@ -20,26 +20,147 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        /* ============================================================
+           THEME SYSTEM – CSS Custom Properties
+           Default: dark-purple  |  light  |  dark-red
+        ============================================================ */
+        :root,
+        [data-theme="dark-purple"] {
+            --bg-primary: #020617;
+            --bg-secondary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-elevated: #334155;
+            --accent: #9333ea;
+            --accent-hover: #a855f7;
+            --accent-light: rgba(147, 51, 234, 0.15);
+            --accent-ring: rgba(147, 51, 234, 0.5);
+            --text-primary: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-faint: #475569;
+            --border: #1e293b;
+            --border-light: #334155;
+            --scrollbar-track: #0f172a;
+            --scrollbar-thumb: #334155;
         }
 
-        /* Custom Scrollbar for dark theme */
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-card: #f1f5f9;
+            --bg-elevated: #e2e8f0;
+            --accent: #7c3aed;
+            --accent-hover: #6d28d9;
+            --accent-light: rgba(124, 58, 237, 0.1);
+            --accent-ring: rgba(124, 58, 237, 0.4);
+            --text-primary: #0f172a;
+            --text-muted: #475569;
+            --text-faint: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #cbd5e1;
+            --scrollbar-track: #e2e8f0;
+            --scrollbar-thumb: #94a3b8;
+        }
+
+        [data-theme="dark-red"] {
+            --bg-primary: #0a0000;
+            --bg-secondary: #120808;
+            --bg-card: #1f0d0d;
+            --bg-elevated: #2d1212;
+            --accent: #dc2626;
+            --accent-hover: #ef4444;
+            --accent-light: rgba(220, 38, 38, 0.15);
+            --accent-ring: rgba(220, 38, 38, 0.5);
+            --text-primary: #fef2f2;
+            --text-muted: #fca5a5;
+            --text-faint: #7f1d1d;
+            --border: #1f0d0d;
+            --border-light: #450a0a;
+            --scrollbar-track: #120808;
+            --scrollbar-thumb: #450a0a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: var(--scrollbar-track);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: var(--scrollbar-thumb);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: var(--border-light);
+        }
+
+        /* Theme-aware utility classes */
+        .theme-bg-primary {
+            background: var(--bg-primary) !important;
+        }
+
+        .theme-bg-secondary {
+            background: var(--bg-secondary) !important;
+        }
+
+        .theme-bg-card {
+            background: var(--bg-card) !important;
+        }
+
+        .theme-bg-elevated {
+            background: var(--bg-elevated) !important;
+        }
+
+        .theme-accent {
+            background: var(--accent) !important;
+        }
+
+        .theme-accent-light {
+            background: var(--accent-light) !important;
+        }
+
+        .theme-text {
+            color: var(--text-primary) !important;
+        }
+
+        .theme-text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .theme-text-accent {
+            color: var(--accent) !important;
+        }
+
+        .theme-border {
+            border-color: var(--border) !important;
+        }
+
+        .theme-border-light {
+            border-color: var(--border-light) !important;
+        }
+
+        .theme-ring {
+            --tw-ring-color: var(--accent-ring) !important;
+        }
+
+        /* Nav item active state */
+        .nav-active {
+            background: var(--accent) !important;
+            color: #fff !important;
+        }
+
+        .nav-item:hover:not(.nav-active) {
+            background: var(--bg-card) !important;
+            color: var(--text-primary) !important;
         }
 
         /* Rotation Classes */
@@ -92,10 +213,65 @@
             animation: pulse-gold 2s infinite;
         }
 
+        @keyframes pulse-warning {
+
+            0%,
+            100% {
+                box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+            }
+
+            50% {
+                box-shadow: 0 0 14px rgba(251, 191, 36, 0.9);
+            }
+        }
+
+        .cmd-warning {
+            animation: pulse-warning 1.2s infinite;
+        }
+
+        @keyframes pulse-lethal {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 18px rgba(239, 68, 68, 1);
+            }
+        }
+
+        .cmd-lethal {
+            animation: pulse-lethal 0.7s infinite;
+        }
+
         /* Mobile Scrolling Fixes */
         .scroll-container {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior-y: contain;
+        }
+
+        /* Life graph */
+        .life-graph-dot {
+            transition: r 0.15s;
+        }
+
+        .life-graph-dot:hover {
+            r: 5;
+        }
+
+        /* Settings theme swatch */
+        .theme-swatch {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .theme-swatch:hover {
+            transform: scale(1.04);
+        }
+
+        .theme-swatch.selected {
+            box-shadow: 0 0 0 3px var(--accent), 0 0 0 6px var(--accent-ring);
+            transform: scale(1.04);
         }
     </style>
 </head>
@@ -166,7 +342,10 @@
             Book: (p) => <Icon {...p} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>} />,
             ChevronLeft: (p) => <Icon {...p} path={<polyline points="15 18 9 12 15 6" />} />,
             ChevronRight: (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6" />} />,
-            LogOut: (p) => <Icon {...p} path={<g><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></g>} />
+            LogOut: (p) => <Icon {...p} path={<g><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></g>} />,
+            AlertTriangle: (p) => <Icon {...p} path={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></>} />,
+            Undo: (p) => <Icon {...p} path={<><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></>} />,
+            Redo: (p) => <Icon {...p} path={<><path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" /></>} />,
         };
 
         // --- Helpers ---
@@ -325,6 +504,22 @@
             );
         };
 
+        // --- Theme Context ---
+        const ThemeContext = React.createContext({ theme: 'dark-purple', setTheme: () => { } });
+
+        const ThemeProvider = ({ children }) => {
+            const [theme, setThemeState] = React.useState(() => localStorage.getItem('mtg_theme') || 'dark-purple');
+            const setTheme = (t) => {
+                setThemeState(t);
+                localStorage.setItem('mtg_theme', t);
+                document.documentElement.setAttribute('data-theme', t);
+            };
+            useEffect(() => {
+                document.documentElement.setAttribute('data-theme', theme);
+            }, [theme]);
+            return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+        };
+
         // --- Web Worker Heartbeat Hook ---
         const useBackgroundHeartbeat = () => {
             useEffect(() => {
@@ -351,6 +546,390 @@
                     URL.revokeObjectURL(workerUrl);
                 };
             }, []);
+        };
+
+        // --- Game Timer Hook ---
+        const useGameTimer = () => {
+            const [elapsed, setElapsed] = useState(0);
+            const [isRunning, setIsRunning] = useState(false);
+            const intervalRef = useRef(null);
+            const startTimeRef = useRef(null);
+            const accumulatedRef = useRef(0);
+
+            const start = () => {
+                if (isRunning) return;
+                startTimeRef.current = Date.now();
+                setIsRunning(true);
+            };
+            const pause = () => {
+                if (!isRunning) return;
+                accumulatedRef.current += Date.now() - startTimeRef.current;
+                setIsRunning(false);
+            };
+            const reset = () => {
+                accumulatedRef.current = 0;
+                startTimeRef.current = null;
+                setIsRunning(false);
+                setElapsed(0);
+            };
+            const restart = () => {
+                accumulatedRef.current = 0;
+                startTimeRef.current = Date.now();
+                setElapsed(0);
+                setIsRunning(true);
+            };
+            useEffect(() => {
+                if (!isRunning) { clearInterval(intervalRef.current); return; }
+                intervalRef.current = setInterval(() => {
+                    setElapsed(accumulatedRef.current + (Date.now() - startTimeRef.current));
+                }, 500);
+                return () => clearInterval(intervalRef.current);
+            }, [isRunning]);
+
+            const fmt = (ms) => {
+                const s = Math.floor(ms / 1000);
+                const m = Math.floor(s / 60);
+                return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+            };
+            return { elapsed, isRunning, display: fmt(elapsed), start, pause, reset, restart };
+        };
+
+        // --- Life History Modal ---
+        const LifeHistoryModal = ({ name, history, startLife = 40, onClose }) => {
+            if (!history || history.length === 0) return (
+                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
+                    <div className="bg-slate-900 p-8 rounded-2xl border border-slate-700 text-center" onClick={e => e.stopPropagation()}>
+                        <div className="text-slate-400 mb-4">No life history yet.</div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white">Close</button>
+                    </div>
+                </div>
+            );
+
+            const W = 320, H = 180, PAD = 32;
+            const allLife = [startLife, ...history.map(h => h.life)];
+            const minL = Math.min(...allLife) - 5;
+            const maxL = Math.max(...allLife) + 5;
+            const toX = (i) => PAD + (i / (allLife.length - 1 || 1)) * (W - PAD * 2);
+            const toY = (l) => PAD + ((maxL - l) / (maxL - minL || 1)) * (H - PAD * 2);
+            const points = allLife.map((l, i) => `${toX(i)},${toY(l)}`).join(' ');
+            const areaPoints = `${toX(0)},${H - PAD} ${points} ${toX(allLife.length - 1)},${H - PAD}`;
+            const lastLife = allLife[allLife.length - 1];
+            const colorClass = lastLife <= 0 ? '#ef4444' : lastLife <= 10 ? '#f59e0b' : '#a855f7';
+
+            return (
+                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+                    <div className="bg-slate-900 w-full max-w-sm rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Icons.BarChart2 className="w-4 h-4 text-purple-400" /> {name} — Life History
+                            </h3>
+                            <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+                        </div>
+                        <div className="p-4">
+                            <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="overflow-visible">
+                                {/* Grid lines */}
+                                {[0, 1, 2, 3].map(i => {
+                                    const y = PAD + i * (H - PAD * 2) / 3;
+                                    const val = Math.round(maxL - i * (maxL - minL) / 3);
+                                    return <g key={i}>
+                                        <line x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="#334155" strokeDasharray="4,4" strokeWidth="1" />
+                                        <text x={PAD - 4} y={y + 4} textAnchor="end" fill="#64748b" fontSize="9">{val}</text>
+                                    </g>;
+                                })}
+                                {/* Zero line */}
+                                {minL < 0 && maxL > 0 && <line x1={PAD} x2={W - PAD} y1={toY(0)} y2={toY(0)} stroke="#ef4444" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="4,2" />}
+                                {/* Area fill */}
+                                <polygon points={areaPoints} fill={colorClass} fillOpacity="0.08" />
+                                {/* Line */}
+                                <polyline points={points} fill="none" stroke={colorClass} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                                {/* Dots */}
+                                {allLife.map((l, i) => (
+                                    <circle key={i} cx={toX(i)} cy={toY(l)} r="3.5" fill={colorClass} stroke="#0f172a" strokeWidth="2" className="life-graph-dot">
+                                        <title>{i === 0 ? `Start: ${l}` : `Move ${i}: ${l}`}</title>
+                                    </circle>
+                                ))}
+                            </svg>
+                            <div className="flex justify-between text-xs text-slate-500 mt-1 px-1">
+                                <span>Start ({startLife})</span>
+                                <span>Now ({lastLife})</span>
+                            </div>
+                            {history.length > 0 && (
+                                <div className="mt-3 space-y-1 max-h-28 overflow-y-auto">
+                                    {[...history].reverse().slice(0, 10).map((h, i) => (
+                                        <div key={i} className="flex justify-between text-xs text-slate-400 border-b border-slate-800 pb-1">
+                                            <span>{h.change > 0 ? `+${h.change}` : h.change}</span>
+                                            <span className="font-bold text-white">{h.life}</span>
+                                            <span className="text-slate-600">{new Date(h.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-center">
+                            <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Stats Export Modal ---
+        const StatsExportModal = ({ user, profile, topCommanders, deathStats, onClose }) => {
+            const canvasRef = useRef(null);
+            const [exporting, setExporting] = useState(false);
+            const [preview, setPreview] = useState(null);
+
+            const displayName = profile?.displayName || user?.displayName || 'Commander';
+            const wins = profile?.stats?.wins || 0;
+            const played = profile?.stats?.gamesPlayed || 0;
+            const winRate = played ? Math.round((wins / played) * 100) : 0;
+            const favColor = profile?.favoriteColor || 'Colorless';
+            const favCmd = profile?.favoriteCommander;
+
+            useEffect(() => { buildCanvas(); }, [profile, topCommanders]);
+
+            const buildCanvas = async () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const W = 600, H = 340;
+                canvas.width = W; canvas.height = H;
+
+                // Background gradient
+                const grad = ctx.createLinearGradient(0, 0, W, H);
+                grad.addColorStop(0, '#0f0520');
+                grad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+
+                // Commander art background if available
+                if (favCmd?.image) {
+                    try {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = favCmd.image; });
+                        ctx.globalAlpha = 0.18;
+                        ctx.filter = 'blur(12px)';
+                        ctx.drawImage(img, W / 2 - 20, 0, W / 2 + 20, H);
+                        ctx.filter = 'none';
+                        ctx.globalAlpha = 1;
+                        // Right side commander portrait
+                        ctx.save();
+                        ctx.globalAlpha = 0.85;
+                        ctx.drawImage(img, W * 0.58, 20, W * 0.38, H - 40);
+                        ctx.restore();
+                        // Gradient overlay on right
+                        const overlay = ctx.createLinearGradient(W * 0.55, 0, W, 0);
+                        overlay.addColorStop(0, 'rgba(10,3,30,1)');
+                        overlay.addColorStop(0.3, 'rgba(10,3,30,0.4)');
+                        overlay.addColorStop(1, 'rgba(10,3,30,0)');
+                        ctx.fillStyle = overlay;
+                        ctx.fillRect(0, 0, W, H);
+                    } catch (e) { }
+                }
+
+                // Purple top bar
+                ctx.fillStyle = '#9333ea';
+                ctx.fillRect(0, 0, W, 4);
+
+                // App branding
+                ctx.fillStyle = 'rgba(147,51,234,0.2)';
+                roundRect(ctx, 20, 20, 160, 28, 6);
+                ctx.fill();
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.fillStyle = '#c084fc';
+                ctx.fillText('⬡ MTG COMMANDER COMPANION', 30, 39);
+
+                // Username
+                ctx.font = 'bold 38px Inter, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(displayName, 24, 100);
+
+                // Colour identity chip
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillStyle = '#a78bfa';
+                ctx.fillText(favColor, 26, 120);
+
+                // Stats boxes
+                const stats = [
+                    { label: 'GAMES', value: played },
+                    { label: 'WINS', value: wins },
+                    { label: 'WIN RATE', value: winRate + '%' },
+                ];
+                stats.forEach((s, i) => {
+                    const x = 24 + i * 130, y = 145;
+                    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                    roundRect(ctx, x, y, 115, 64, 10);
+                    ctx.fill();
+                    ctx.font = 'bold 26px Inter, sans-serif';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(String(s.value), x + 12, y + 38);
+                    ctx.font = '10px Inter, sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText(s.label, x + 12, y + 56);
+                });
+
+                // Top commanders section
+                if (topCommanders?.length > 0) {
+                    ctx.font = 'bold 11px Inter, sans-serif';
+                    ctx.fillStyle = '#7c3aed';
+                    ctx.fillText('TOP COMMANDERS', 24, 240);
+                    for (let i = 0; i < Math.min(topCommanders.length, 3); i++) {
+                        const cmd = topCommanders[i];
+                        const y = 255 + i * 24;
+                        ctx.font = i === 0 ? 'bold 13px Inter, sans-serif' : '12px Inter, sans-serif';
+                        ctx.fillStyle = i === 0 ? '#f8fafc' : '#94a3b8';
+                        ctx.fillText(`${i + 1}. ${cmd.name}`, 24, y);
+                        ctx.font = '11px Inter, sans-serif';
+                        ctx.fillStyle = '#6d28d9';
+                        ctx.fillText(`${cmd.count}×`, 200, y);
+
+                        if (cmd.image) {
+                            try {
+                                const ci = new Image(); ci.crossOrigin = 'anonymous';
+                                await new Promise((res, rej) => { ci.onload = res; ci.onerror = rej; ci.src = cmd.image; });
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(14, y - 6, 8, 0, Math.PI * 2);
+                                ctx.clip();
+                                ctx.drawImage(ci, 6, y - 14, 16, 16);
+                                ctx.restore();
+                            } catch (e) { }
+                        }
+                    }
+                }
+
+                // Footer
+                ctx.font = '10px Inter, sans-serif';
+                ctx.fillStyle = '#334155';
+                ctx.fillText('mtg-life-tool.web.app  •  Exported ' + new Date().toLocaleDateString(), 24, H - 14);
+
+                setPreview(canvas.toDataURL('image/png'));
+            };
+
+            const download = () => {
+                if (!preview) return;
+                const a = document.createElement('a');
+                a.href = preview;
+                a.download = `${displayName}-mtg-stats.png`;
+                a.click();
+            };
+
+            const share = async () => {
+                if (!preview || !navigator.share) { download(); return; }
+                try {
+                    const blob = await (await fetch(preview)).blob();
+                    const file = new File([blob], `${displayName}-mtg-stats.png`, { type: 'image/png' });
+                    await navigator.share({ files: [file], title: 'My MTG Stats', text: `Check out my Commander stats! ${wins} wins out of ${played} games.` });
+                } catch (e) { download(); }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in" onClick={onClose}>
+                    <div className="bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                            <h3 className="font-bold text-white flex items-center gap-2"><Icons.Share className="w-4 h-4 text-purple-400" /> Export Stats Card</h3>
+                            <button onClick={onClose}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button>
+                        </div>
+                        <div className="p-4">
+                            <canvas ref={canvasRef} className="hidden" />
+                            {preview ? (
+                                <img src={preview} alt="Stats Card" className="w-full rounded-xl border border-slate-700 shadow-lg" />
+                            ) : (
+                                <div className="h-48 flex items-center justify-center text-slate-500">Generating preview...</div>
+                            )}
+                        </div>
+                        <div className="p-4 bg-slate-800 border-t border-slate-700 flex gap-3 justify-end">
+                            <button onClick={onClose} className="text-slate-400 hover:text-white px-4 py-2 text-sm">Cancel</button>
+                            {navigator.share && (
+                                <button onClick={share} className="flex items-center gap-2 bg-purple-600/20 border border-purple-500/50 text-purple-200 hover:bg-purple-600 hover:text-white px-4 py-2 rounded-lg font-bold text-sm transition-all">
+                                    <Icons.Share className="w-4 h-4" /> Share
+                                </button>
+                            )}
+                            <button onClick={download} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all">
+                                <Icons.ExternalLink className="w-4 h-4" /> Download PNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // helper for canvas roundRect (Safari compat)
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+            ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+            ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+            ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+            ctx.closePath();
+        }
+
+        // --- Settings Page ---
+        const SettingsPage = () => {
+            const { theme, setTheme } = React.useContext(ThemeContext);
+            const themes = [
+                { id: 'dark-purple', label: 'Dark Purple', desc: 'Default — deep space vibes', preview: ['#020617', '#9333ea', '#1e293b'] },
+                { id: 'light', label: 'Light', desc: 'Clean & crisp with purple', preview: ['#f8fafc', '#7c3aed', '#e2e8f0'] },
+                { id: 'dark-red', label: 'Dark Red', desc: 'Crimson battle mode', preview: ['#0a0000', '#dc2626', '#1f0d0d'] },
+            ];
+            return (
+                <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+                    <div className="max-w-2xl mx-auto space-y-8">
+                        <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: 'var(--text-primary)' }}>
+                            <Icons.Sliders className="w-8 h-8" style={{ color: 'var(--accent)' }} /> Settings
+                        </h1>
+
+                        {/* Theme picker */}
+                        <div className="p-6 rounded-2xl border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-light)' }}>
+                            <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Theme</h2>
+                            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Changes take effect immediately and are saved for next time.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {themes.map(t => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setTheme(t.id)}
+                                        className={`theme-swatch p-4 rounded-xl border-2 text-left transition-all ${theme === t.id ? 'selected' : ''}`}
+                                        style={{ background: t.preview[0], borderColor: theme === t.id ? t.preview[1] : t.preview[2] }}
+                                    >
+                                        <div className="flex gap-2 mb-3">
+                                            <div className="w-5 h-5 rounded-full" style={{ background: t.preview[0], border: `2px solid ${t.preview[2]}` }} />
+                                            <div className="w-5 h-5 rounded-full" style={{ background: t.preview[1] }} />
+                                            <div className="w-5 h-5 rounded-full" style={{ background: t.preview[2] }} />
+                                        </div>
+                                        <div className="font-bold text-sm" style={{ color: t.id === 'light' ? '#0f172a' : '#f1f5f9' }}>{t.label}</div>
+                                        <div className="text-xs mt-0.5" style={{ color: t.id === 'light' ? '#64748b' : '#94a3b8' }}>{t.desc}</div>
+                                        {theme === t.id && (
+                                            <div className="mt-2 text-xs font-bold px-2 py-0.5 rounded-full inline-block" style={{ background: t.preview[1], color: '#fff' }}>Active</div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Preferences (future) */}
+                        <div className="p-6 rounded-2xl border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-light)' }}>
+                            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Preferences</h2>
+                            <div className="space-y-3 opacity-50 pointer-events-none select-none">
+                                {['Starting Life Total (40)', 'Auto-detect Winner', 'Sound Effects', 'Haptic Feedback'].map(pref => (
+                                    <div key={pref} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                                        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{pref}</span>
+                                        <div className="w-10 h-5 rounded-full" style={{ background: 'var(--bg-elevated)' }} />
+                                    </div>
+                                ))}
+                                <p className="text-xs text-center pt-2" style={{ color: 'var(--text-faint)' }}>Coming soon</p>
+                            </div>
+                        </div>
+
+                        {/* About */}
+                        <div className="p-6 rounded-2xl border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-light)' }}>
+                            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>About</h2>
+                            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>MTG Commander Companion — v2.28.0</p>
+                            <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>Not affiliated with Wizards of the Coast.</p>
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
         // --- Components ---
@@ -765,6 +1344,8 @@
         const StatsPage = ({ user }) => {
             const [stats, setStats] = useState({ topCommanders: [], topCommander: null, deathStats: null, leaderboard: [] });
             const [loading, setLoading] = useState(true);
+            const [showExportModal, setShowExportModal] = useState(false);
+            const [userProfile, setUserProfile] = useState(null);
 
             useEffect(() => {
                 if (!user) return;
@@ -806,7 +1387,13 @@
             return (
                 <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24">
                     <div className="max-w-4xl mx-auto space-y-8">
-                        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3"><Icons.BarChart2 className="w-8 h-8 text-purple-500" /> Global Stats</h1>
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3"><Icons.BarChart2 className="w-8 h-8 text-purple-500" /> Global Stats</h1>
+                            <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 bg-purple-700/60 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-xl transition-colors border border-purple-500/50 text-sm">
+                                <Icons.Share className="w-4 h-4" /> Export Card
+                            </button>
+                        </div>
+                        {showExportModal && <StatsExportModal user={user} stats={stats} onClose={() => setShowExportModal(false)} />}
 
                         {/* Leaderboard */}
                         <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700 backdrop-blur-sm">
@@ -915,13 +1502,14 @@
         };
 
         // 6. Player Card (Updated for Partner & Kick)
-        const PlayerCard = ({ id, name, life, commander, partner, color, poison = 0, commanderDamage = {}, milled = false, onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog, canKick, onKick, playerId, ...props }) => {
+        const PlayerCard = ({ id, name, life, commander, partner, color, poison = 0, commanderDamage = {}, milled = false, mulligans = 0, lifeHistory = [], onUpdate, onDead, isDead, isLocal, isWinner, players = [], onLog, canKick, onKick, playerId, startLife = 40, ...props }) => {
             const [showCmdrSearch, setShowCmdrSearch] = useState(false);
             const [showTools, setShowTools] = useState(false);
             const [rotation, setRotation] = useState(0);
             const [activeTooltip, setActiveTooltip] = useState(null);
             const [confirmKick, setConfirmKick] = useState(false);
-            const [showKick, setShowKick] = useState(false); // For online room kick button
+            const [showKick, setShowKick] = useState(false);
+            const [showLifeGraph, setShowLifeGraph] = useState(false);
 
             const pushToLog = (msg) => { if (onLog) onLog(msg); };
             const lifeChangeRef = useRef(0);
@@ -930,10 +1518,10 @@
             const adjustLife = (amount) => {
                 const newLife = life + amount;
                 const deadByPoison = poison >= 10;
-                // Check damages: Primary or Partner > 21
                 const deadByCmdr = Object.values(commanderDamage).some(d => d >= 21);
                 const deadByLife = newLife <= 0;
-                onUpdate(id, { life: newLife, isDead: deadByPoison || deadByCmdr || deadByLife || milled });
+                const newHistory = [...(lifeHistory || []), { life: newLife, change: amount, ts: Date.now() }].slice(-30);
+                onUpdate(id, { life: newLife, isDead: deadByPoison || deadByCmdr || deadByLife || milled, lifeHistory: newHistory });
                 lifeChangeRef.current += amount;
                 if (lifeTimeoutRef.current) clearTimeout(lifeTimeoutRef.current);
                 lifeTimeoutRef.current = setTimeout(() => {
@@ -961,6 +1549,12 @@
                 const deadByLife = life <= 0;
                 onUpdate(id, { milled: isNowMilled, isDead: deadByPoison || deadByCmdr || deadByLife || isNowMilled });
                 pushToLog(`${name}: ${isNowMilled ? 'Milled Out' : 'Recovered from Mill'}`);
+            };
+
+            const adjustMulligans = (amt) => {
+                const newCount = Math.max(0, (mulligans || 0) + amt);
+                onUpdate(id, { mulligans: newCount });
+                if (amt > 0) pushToLog(`${name}: Took mulligan #${newCount}`);
             };
 
             // key can be just opponentId (main) or opponentId-partner
@@ -1009,7 +1603,7 @@
                                 <button onClick={() => adjustLife(-1)} className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm active:scale-95 transition-all"><span className="text-3xl font-light mb-1">-</span></button>
                                 <div className="flex flex-col items-center">
                                     <div className="text-7xl font-black text-white tabular-nums tracking-tighter drop-shadow-2xl relative">{life}{isWinner && <Icons.Crown className="w-8 h-8 text-yellow-400 absolute -top-8 -right-4 rotate-12 drop-shadow-lg" />}</div>
-                                    <div className="flex gap-2">{(poison > 0) && (<div className="flex items-center gap-1 text-green-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs"><Icons.Droplet className="w-3 h-3" /> {poison}/10</div>)}{milled && (<div className="flex items-center gap-1 text-blue-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs border border-blue-500/50"><Icons.Book className="w-3 h-3" /> Milled</div>)}</div>
+                                    <div className="flex gap-2">{(poison > 0) && (<div className="flex items-center gap-1 text-green-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs"><Icons.Droplet className="w-3 h-3" /> {poison}/10</div>)}{milled && (<div className="flex items-center gap-1 text-blue-400 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs border border-blue-500/50"><Icons.Book className="w-3 h-3" /> Milled</div>)}{mulligans > 0 && (<div className="flex items-center gap-1 text-yellow-300 font-bold mt-1 bg-black/50 px-2 py-0.5 rounded-full text-xs border border-yellow-500/30">🃏 {mulligans}×</div>)}</div>
 
                                     <div className="flex flex-wrap justify-center gap-1 mt-1 max-w-[120px] relative">
                                         {Object.entries(commanderDamage).map(([key, dmg]) => {
@@ -1031,8 +1625,14 @@
                                                     onMouseLeave={() => setActiveTooltip(null)}
                                                     onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === key ? null : key); }}
                                                 >
-                                                    <div className={`flex items-center gap-1 font-bold bg-black/50 px-2 py-0.5 rounded-full text-xs cursor-pointer border ${isPartnerDmg ? 'text-orange-400 border-orange-500/20' : 'text-red-400 border-red-500/20'}`}>
-                                                        <Icons.Sword className="w-3 h-3" /> {dmg}/21
+                                                    <div className={`flex items-center gap-1 font-bold bg-black/50 px-2 py-0.5 rounded-full text-xs cursor-pointer border
+                                                        ${dmg >= 21
+                                                            ? 'text-red-400 border-red-500/60 cmd-lethal'
+                                                            : dmg >= 16
+                                                                ? 'text-amber-400 border-amber-400/60 cmd-warning'
+                                                                : isPartnerDmg ? 'text-orange-400 border-orange-500/20' : 'text-red-400 border-red-500/20'
+                                                        }`}>
+                                                        {dmg >= 16 ? <Icons.AlertTriangle className="w-3 h-3" /> : <Icons.Sword className="w-3 h-3" />} {dmg}/21
                                                     </div>
                                                     {/* Custom Tooltip Popover */}
                                                     {activeTooltip === key && (
@@ -1052,7 +1652,12 @@
                         </div>
                         <div className="flex flex-col items-center space-y-3 relative">
                             <div className="flex justify-center gap-3">{[-10, -5, 5, 10].map(amt => (<button key={amt} onClick={() => adjustLife(amt)} className="px-3 py-1 bg-black/20 hover:bg-black/40 rounded-lg text-white/80 text-xs font-bold backdrop-blur-sm">{amt > 0 ? '+' : ''}{amt}</button>))}</div>
-                            <div className="flex items-center gap-2"><button onClick={() => setShowTools(true)} className="flex items-center gap-1 text-xs bg-slate-700/80 hover:bg-slate-600/80 text-white font-bold px-3 py-2 rounded-xl backdrop-blur-md transition-colors shadow-md"><Icons.Sliders className="w-4 h-4" /> Counters</button></div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowTools(true)} className="flex items-center gap-1 text-xs bg-slate-700/80 hover:bg-slate-600/80 text-white font-bold px-3 py-2 rounded-xl backdrop-blur-md transition-colors shadow-md"><Icons.Sliders className="w-4 h-4" /> Counters</button>
+                                {(lifeHistory && lifeHistory.length > 0) && (
+                                    <button onClick={() => setShowLifeGraph(true)} className="text-xs bg-purple-700/60 hover:bg-purple-600/80 text-white font-bold px-2 py-2 rounded-xl backdrop-blur-md transition-colors shadow-md" title="Life History"><Icons.BarChart2 className="w-4 h-4" /></button>
+                                )}
+                            </div>
                         </div>
                         {commander?.artist && (<div className="absolute bottom-1 right-2 text-[10px] text-white/40 font-medium pointer-events-none text-right leading-tight"><div>Art by {commander.artist}</div><div>™ & © Wizards of the Coast</div></div>)}
                     </div>
@@ -1066,14 +1671,31 @@
                         onClose={() => setShowCmdrSearch(false)}
                         mode="commander"
                     />}
+                    {showLifeGraph && <LifeHistoryModal name={name} history={lifeHistory || []} startLife={startLife} onClose={() => setShowLifeGraph(false)} />}
                     {showTools && (
                         <div className={`absolute inset-0 bg-slate-900/95 z-20 flex flex-col p-4 transition-transform duration-300 ${rotateClass}`}>
                             <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2"><h3 className="text-white font-bold flex items-center gap-2"><Icons.Sliders className="w-4 h-4" /> Damage & Counters</h3><button onClick={() => setShowTools(false)}><Icons.X className="w-5 h-5 text-slate-400 hover:text-white" /></button></div>
                             <div className="flex-1 overflow-y-auto space-y-4">
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-green-400 flex items-center gap-2"><Icons.Droplet className="w-4 h-4" /> Poison (Infect)</span><span className="text-xs text-slate-500">Die at 10</span></div><div className="flex items-center justify-between bg-slate-900 rounded-lg p-2"><button onClick={() => adjustPoison(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button><span className="font-mono text-xl text-white font-bold">{poison || 0}</span><button onClick={() => adjustPoison(1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">+</button></div></div>
 
+                                {/* Mulligan Tracker */}
+                                <div className="bg-slate-800/50 p-3 rounded-lg border border-yellow-900/40">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-semibold text-yellow-300 flex items-center gap-2">🃏 Mulligans</span>
+                                        <span className="text-xs text-slate-500">Tracking only</span>
+                                    </div>
+                                    <div className="flex items-center justify-between bg-slate-900 rounded-lg p-2">
+                                        <button onClick={() => adjustMulligans(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 rounded text-white hover:bg-slate-600">-</button>
+                                        <span className="font-mono text-xl text-white font-bold">{mulligans || 0}</span>
+                                        <button onClick={() => adjustMulligans(1)} className="w-8 h-8 flex items-center justify-center bg-yellow-700/80 rounded text-white hover:bg-yellow-600">+</button>
+                                    </div>
+                                </div>
+
+                                {/* Milled */}
+                                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><span className="text-sm font-semibold text-blue-400 flex items-center gap-2 mb-2"><Icons.Book className="w-4 h-4" /> Library Status</span><button onClick={toggleMilled} className={`w-full py-2 rounded-lg font-bold text-sm transition-all ${milled ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>{milled ? '📚 Milled Out' : 'Mark as Milled Out'}</button></div>
+
                                 <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700"><div className="flex justify-between items-center mb-2"><span className="text-sm font-semibold text-red-400 flex items-center gap-2"><Icons.Sword className="w-4 h-4" /> Commander Damage</span><span className="text-xs text-slate-500">Die at 21 per Cmdr</span></div><div className="space-y-2">
-                                    {players.filter(p => p.id !== id).map(opponent => {
+                                    {[...players].filter(p => p.id !== id).sort((a, b) => String(a.id).localeCompare(String(b.id))).map(opponent => {
                                         const dmgMain = commanderDamage[opponent.id] || 0;
                                         const dmgPartner = commanderDamage[`${opponent.id}-partner`] || 0;
 
@@ -2066,7 +2688,21 @@
                 <h1 className="text-3xl font-bold text-white mb-8">Patch Notes</h1>
                 <div className="relative pl-8 border-l-2 border-slate-700">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-slate-900" />
-                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.27.0 - Stability & UX</div>
+                    <div className="mb-1 text-purple-400 font-mono text-sm">v2.28.0 - Game Enhancements</div>
+                    <h3 className="text-xl font-bold text-white mb-2">New Features</h3>
+                    <ul className="list-disc pl-4 space-y-2 text-slate-400">
+                        <li><strong className="text-slate-200">Game Timer:</strong> A live clock now appears during local games with pause/reset controls.</li>
+                        <li><strong className="text-slate-200">Undo / Redo:</strong> Full undo/redo support (Ctrl+Z / Ctrl+Y) for life total and counter changes.</li>
+                        <li><strong className="text-slate-200">Life History:</strong> Tap the 📊 button on any player card to see a graph of their life total over the game.</li>
+                        <li><strong className="text-slate-200">Mulligan Tracker:</strong> Track mulligans per player from the Counters panel — badge shown on card.</li>
+                        <li><strong className="text-slate-200">Commander Damage Alerts:</strong> Badges turn amber at 16+ damage and flash red at lethal (21+).</li>
+                        <li><strong className="text-slate-200">Export Stats Card:</strong> Share your global stats as a shareable image from the Stats page.</li>
+                        <li><strong className="text-slate-200">Theme System:</strong> Choose from Dark Purple (default), Light, or Dark Red themes in Settings.</li>
+                    </ul>
+                </div>
+                <div className="relative pl-8 border-l-2 border-slate-700">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-slate-700 ring-4 ring-slate-900" />
+                    <div className="mb-1 text-slate-500 font-mono text-sm">v2.27.0 - Stability & UX</div>
                     <h3 className="text-xl font-bold text-white mb-2">Bug Fixes & Improvements</h3>
                     <ul className="list-disc pl-4 space-y-2 text-slate-400">
                         <li><strong className="text-slate-200">Stable Player Panels:</strong> Fixed player panels constantly switching positions in multiplayer lobbies.</li>
@@ -2183,12 +2819,48 @@
             const [localLog, setLocalLog] = useState([]);
             const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-            // Local Tool States
             const [showLocalMenu, setShowLocalMenu] = useState(false);
             const [showToolsModal, setShowToolsModal] = useState(false);
             const [showHistoryModal, setShowHistoryModal] = useState(false);
             const [showCardSearch, setShowCardSearch] = useState(false);
             const [viewingCard, setViewingCard] = useState(null);
+
+            // Undo / Redo
+            const undoStack = useRef([]);
+            const redoStack = useRef([]);
+
+            // Game Timer
+            const timer = useGameTimer();
+
+            const saveSnapshot = (players) => {
+                undoStack.current.push(JSON.parse(JSON.stringify(players)));
+                if (undoStack.current.length > 20) undoStack.current.shift();
+                redoStack.current = [];
+            };
+
+            const undoLocalGame = () => {
+                if (undoStack.current.length === 0) return;
+                redoStack.current.push(JSON.parse(JSON.stringify(localPlayers)));
+                setLocalPlayers(undoStack.current.pop());
+                addLocalLog('↩ Undo');
+            };
+
+            const redoLocalGame = () => {
+                if (redoStack.current.length === 0) return;
+                undoStack.current.push(JSON.parse(JSON.stringify(localPlayers)));
+                setLocalPlayers(redoStack.current.pop());
+                addLocalLog('↪ Redo');
+            };
+
+            // Ctrl+Z / Ctrl+Y keyboard shortcuts
+            useEffect(() => {
+                const handler = (e) => {
+                    if (!isLocalSetup && (e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && !e.shiftKey) { e.preventDefault(); undoLocalGame(); }
+                    if (!isLocalSetup && ((e.key === 'y' || e.key === 'Y') && (e.ctrlKey || e.metaKey)) || ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && e.shiftKey)) { e.preventDefault(); redoLocalGame(); }
+                };
+                window.addEventListener('keydown', handler);
+                return () => window.removeEventListener('keydown', handler);
+            }, [isLocalSetup, localPlayers]);
 
             useEffect(() => {
                 const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -2221,30 +2893,36 @@
 
             const startLocalGame = (count) => {
                 const newPlayers = Array.from({ length: count }, (_, i) => ({
-                    id: i + 1, name: `P${i + 1}`, life: 40, commander: null, color: 'bg-slate-800', poison: 0, milled: false, commanderDamage: {}, isDead: false
+                    id: i + 1, name: `P${i + 1}`, life: 40, startLife: 40, commander: null, color: 'bg-slate-800', poison: 0, milled: false, commanderDamage: {}, isDead: false, mulligans: 0, lifeHistory: []
                 }));
+                undoStack.current = [];
+                redoStack.current = [];
                 setLocalPlayers(newPlayers);
                 setLocalLog([]);
                 addLocalLog(`Started ${count}-player game`);
                 setIsLocalSetup(false);
                 setShowLocalMenu(false);
+                timer.restart();
             };
 
             const resetLocalGame = () => { setIsLocalSetup(true); setShowLocalMenu(false); };
             const addLocalLog = (msg) => { setLocalLog(prev => [...prev, { timestamp: Date.now(), message: msg }]); };
 
             const updateLocalPlayer = (id, updates) => {
-                setLocalPlayers(prev => prev.map(p => {
-                    if (p.id !== id) return p;
-                    const updated = { ...p, ...updates };
-                    if (typeof updates.life !== 'undefined' || typeof updates.poison !== 'undefined' || updates.commanderDamage || typeof updates.milled !== 'undefined') {
-                        const deadByPoison = updated.poison >= 10;
-                        const deadByCmdr = Object.values(updated.commanderDamage || {}).some(dmg => dmg >= 21);
-                        const deadByLife = updated.life <= 0;
-                        updated.isDead = deadByPoison || deadByCmdr || deadByLife || updated.milled;
-                    }
-                    return updated;
-                }));
+                setLocalPlayers(prev => {
+                    saveSnapshot(prev);
+                    return prev.map(p => {
+                        if (p.id !== id) return p;
+                        const updated = { ...p, ...updates };
+                        if (typeof updates.life !== 'undefined' || typeof updates.poison !== 'undefined' || updates.commanderDamage || typeof updates.milled !== 'undefined') {
+                            const deadByPoison = updated.poison >= 10;
+                            const deadByCmdr = Object.values(updated.commanderDamage || {}).some(dmg => dmg >= 21);
+                            const deadByLife = updated.life <= 0;
+                            updated.isDead = deadByPoison || deadByCmdr || deadByLife || updated.milled;
+                        }
+                        return updated;
+                    });
+                });
             };
 
             const NavItem = ({ id, label, icon: Icon }) => (
@@ -2299,6 +2977,7 @@
                                 {!isSidebarCollapsed && <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-2 mt-6">Data & Info</div>}
                                 <NavItem id="profile" label="My Profile" icon={Icons.User} />
                                 <NavItem id="stats" label="Global Stats" icon={Icons.BarChart2} />
+                                <NavItem id="settings" label="Settings" icon={Icons.Sliders} />
                                 <NavItem id="contact" label="Contact" icon={Icons.Mail} />
                                 <NavItem id="changes" label="Changelog" icon={Icons.FileText} />
                             </div>
@@ -2324,6 +3003,15 @@
                                         <LocalSetup onStart={startLocalGame} />
                                     ) : (
                                         <div className="relative h-full w-full">
+                                            {/* Game Timer HUD */}
+                                            <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-center gap-3 p-2 bg-black/30 backdrop-blur-sm pointer-events-none">
+                                                <span className="font-mono text-white font-bold tracking-widest text-lg drop-shadow">{timer.display}</span>
+                                                <div className="flex gap-1 pointer-events-auto">
+                                                    <button onClick={timer.isRunning ? timer.pause : timer.start} className="p-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-xs transition">{timer.isRunning ? '⏸' : '▶'}</button>
+                                                    <button onClick={timer.reset} className="p-1 bg-white/10 hover:bg-white/20 rounded-full text-white/80 text-xs transition">🔄</button>
+                                                </div>
+                                            </div>
+
                                             <div className={`absolute inset-0 grid gap-2 p-2 pt-16 pb-20 overflow-y-auto scroll-container ${localPlayers.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' :
                                                 localPlayers.length <= 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' :
                                                     'grid-cols-2 lg:grid-cols-3'
@@ -2362,6 +3050,20 @@
                                                                 <Icons.RotateCcw className="w-4 h-4" /> New Game
                                                             </button>
                                                             <button
+                                                                onClick={undoLocalGame}
+                                                                disabled={undoStack.current.length === 0}
+                                                                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-blue-600 transition-colors animate-in fade-in slide-in-from-top-2 delay-[30ms] whitespace-nowrap disabled:opacity-40"
+                                                            >
+                                                                <Icons.Undo className="w-4 h-4" /> Undo
+                                                            </button>
+                                                            <button
+                                                                onClick={redoLocalGame}
+                                                                disabled={redoStack.current.length === 0}
+                                                                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-blue-600 transition-colors animate-in fade-in slide-in-from-top-2 delay-[60ms] whitespace-nowrap disabled:opacity-40"
+                                                            >
+                                                                <Icons.Redo className="w-4 h-4" /> Redo
+                                                            </button>
+                                                            <button
                                                                 onClick={() => { setShowToolsModal(true); setShowLocalMenu(false); }}
                                                                 className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-xl border border-slate-700 hover:bg-purple-600 transition-colors animate-in fade-in slide-in-from-top-2 delay-75 whitespace-nowrap"
                                                             >
@@ -2390,6 +3092,7 @@
                             {view === 'online' && <OnlineRoom user={user} onLeave={() => setView('local')} />}
                             {view === 'profile' && <ProfilePage user={user} viewProfileId={viewProfileId} onBack={() => { setViewProfileId(null); setView('local'); window.history.pushState({}, '', '/'); }} />}
                             {view === 'stats' && <StatsPage user={user} />}
+                            {view === 'settings' && <SettingsPage />}
                             {view === 'contact' && <ContactPage />}
                             {view === 'changes' && <Changelog />}
 
@@ -2413,7 +3116,7 @@
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<ThemeProvider><App /></ThemeProvider>);
     </script>
 </body>
 
