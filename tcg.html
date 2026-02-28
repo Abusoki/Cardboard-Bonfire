@@ -19,65 +19,11 @@
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
+    <!-- Theme CSS variables (add new themes in css/themes.css) -->
+    <link rel="stylesheet" href="./css/themes.css">
+
     <style>
-        /* ============================================================
-           THEME SYSTEM – CSS Custom Properties
-           Default: dark-purple  |  light  |  dark-red
-        ============================================================ */
-        :root,
-        [data-theme="dark-purple"] {
-            --bg-primary: #020617;
-            --bg-secondary: #0f172a;
-            --bg-card: #1e293b;
-            --bg-elevated: #334155;
-            --accent: #9333ea;
-            --accent-hover: #a855f7;
-            --accent-light: rgba(147, 51, 234, 0.15);
-            --accent-ring: rgba(147, 51, 234, 0.5);
-            --text-primary: #f1f5f9;
-            --text-muted: #94a3b8;
-            --text-faint: #475569;
-            --border: #1e293b;
-            --border-light: #334155;
-            --scrollbar-track: #0f172a;
-            --scrollbar-thumb: #334155;
-        }
-
-        [data-theme="light"] {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8fafc;
-            --bg-card: #f1f5f9;
-            --bg-elevated: #e2e8f0;
-            --accent: #7c3aed;
-            --accent-hover: #6d28d9;
-            --accent-light: rgba(124, 58, 237, 0.1);
-            --accent-ring: rgba(124, 58, 237, 0.4);
-            --text-primary: #0f172a;
-            --text-muted: #475569;
-            --text-faint: #94a3b8;
-            --border: #e2e8f0;
-            --border-light: #cbd5e1;
-            --scrollbar-track: #e2e8f0;
-            --scrollbar-thumb: #94a3b8;
-        }
-
-        [data-theme="dark-red"] {
-            --bg-primary: #0a0000;
-            --bg-secondary: #120808;
-            --bg-card: #1f0d0d;
-            --bg-elevated: #2d1212;
-            --accent: #dc2626;
-            --accent-hover: #ef4444;
-            --accent-light: rgba(220, 38, 38, 0.15);
-            --accent-ring: rgba(220, 38, 38, 0.5);
-            --text-primary: #fef2f2;
-            --text-muted: #fca5a5;
-            --text-faint: #7f1d1d;
-            --border: #1f0d0d;
-            --border-light: #450a0a;
-            --scrollbar-track: #120808;
-            --scrollbar-thumb: #450a0a;
-        }
+        /* Theme CSS variables live in css/themes.css */
 
         body {
             font-family: 'Inter', sans-serif;
@@ -280,7 +226,10 @@
 <body class="bg-[var(--bg-primary)] text-[var(--text-primary)] h-[100dvh] overflow-hidden">
     <div id="root" class="h-full w-full"></div>
 
-    <!-- PlayerCard is defined in its own file and exposed via window.PlayerCard -->
+    <!-- Theme config + ThemeContext + ThemeProvider -->
+    <script type="text/babel" src="./js/themes.js"></script>
+
+    <!-- PlayerCard component -->
     <script type="text/babel" src="./js/PlayerCard.js"></script>
 
     <script type="text/babel" data-type="module">
@@ -516,21 +465,9 @@
             );
         };
 
-        // --- Theme Context ---
-        const ThemeContext = React.createContext({ theme: 'dark-purple', setTheme: () => { } });
-
-        const ThemeProvider = ({ children }) => {
-            const [theme, setThemeState] = React.useState(() => localStorage.getItem('mtg_theme') || 'dark-purple');
-            const setTheme = (t) => {
-                setThemeState(t);
-                localStorage.setItem('mtg_theme', t);
-                document.documentElement.setAttribute('data-theme', t);
-            };
-            useEffect(() => {
-                document.documentElement.setAttribute('data-theme', theme);
-            }, [theme]);
-            return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
-        };
+        // --- Theme Context (defined in js/themes.js, loaded before this module) ---
+        const ThemeContext = window.ThemeContext;
+        const ThemeProvider = window.ThemeProvider;
 
         // --- Web Worker Heartbeat Hook ---
         const useBackgroundHeartbeat = () => {
@@ -694,11 +631,8 @@
         // --- Settings Page ---
         const SettingsPage = () => {
             const { theme, setTheme } = React.useContext(ThemeContext);
-            const themes = [
-                { id: 'dark-purple', label: 'Dark Purple', desc: 'Default — deep space vibes', preview: ['#020617', '#9333ea', '#1e293b'] },
-                { id: 'light', label: 'Light', desc: 'Clean & crisp with purple', preview: ['#f8fafc', '#7c3aed', '#e2e8f0'] },
-                { id: 'dark-red', label: 'Dark Red', desc: 'Crimson battle mode', preview: ['#0a0000', '#dc2626', '#1f0d0d'] },
-            ];
+            // Theme list is defined in js/themes.js — add new themes there
+            const themes = window.THEME_CONFIG;
             return (
                 <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
                     <div className="max-w-2xl mx-auto space-y-8">

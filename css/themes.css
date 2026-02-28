@@ -1,0 +1,66 @@
+/* ============================================================
+   THEME SYSTEM – CSS Custom Properties
+   To add a new theme:
+     1. Add a [data-theme="your-id"] block here with all variables
+     2. Add a matching entry in js/themes.js THEME_CONFIG array
+   ============================================================ */
+
+/* --- Dark Purple (default) --- */
+:root,
+[data-theme="dark-purple"] {
+    --bg-primary: #020617;
+    --bg-secondary: #0f172a;
+    --bg-card: #1e293b;
+    --bg-elevated: #334155;
+    --accent: #9333ea;
+    --accent-hover: #a855f7;
+    --accent-light: rgba(147, 51, 234, 0.15);
+    --accent-ring: rgba(147, 51, 234, 0.5);
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-faint: #475569;
+    --border: #1e293b;
+    --border-light: #334155;
+    --scrollbar-track: #0f172a;
+    --scrollbar-thumb: #334155;
+}
+
+/* --- Light --- */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-card: #f1f5f9;
+    --bg-elevated: #e2e8f0;
+    --accent: #7c3aed;
+    --accent-hover: #6d28d9;
+    --accent-light: rgba(124, 58, 237, 0.1);
+    --accent-ring: rgba(124, 58, 237, 0.4);
+    --text-primary: #0f172a;
+    --text-muted: #475569;
+    --text-faint: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #cbd5e1;
+    --scrollbar-track: #e2e8f0;
+    --scrollbar-thumb: #94a3b8;
+}
+
+/* --- Dark Red --- */
+[data-theme="dark-red"] {
+    --bg-primary: #0a0000;
+    --bg-secondary: #120808;
+    --bg-card: #1f0d0d;
+    --bg-elevated: #2d1212;
+    --accent: #dc2626;
+    --accent-hover: #ef4444;
+    --accent-light: rgba(220, 38, 38, 0.15);
+    --accent-ring: rgba(220, 38, 38, 0.5);
+    --text-primary: #fef2f2;
+    --text-muted: #fca5a5;
+    --text-faint: #7f1d1d;
+    --border: #1f0d0d;
+    --border-light: #450a0a;
+    --scrollbar-track: #120808;
+    --scrollbar-thumb: #450a0a;
+}
+
+/* ---- Add new themes below this line ---- */
