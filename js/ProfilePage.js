@@ -11,11 +11,6 @@
 // =============================================================
 
 const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
-    const Icons = window.Icons;
-    const MTG_IDENTITIES = window.MTG_IDENTITIES;
-    const IdentityIcon = window.IdentityIcon;
-    const { getUserProfile, updateUserProfile, followUser, unfollowUser } = window.fbHelpers;
-
     const [profile, setProfile] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [editing, setEditing] = React.useState(false);
@@ -31,43 +26,55 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
             setLoading(true);
             setNotFound(false);
             let target = viewProfileId;
-
-            if (!target) {
-                if (user) target = user.uid;
-                else { setLoading(false); return; }
-            }
-
-            if (target.length !== 28 && target !== user?.uid) {
-                try {
-                    const { doc: fbDoc, getDoc: fbGetDoc } = window._fb();
-                    const usernameDoc = await fbGetDoc(fbDoc(window._db, 'artifacts', window._appId, 'public', 'data', 'usernames', target.toLowerCase()));
-                    if (usernameDoc.exists()) {
-                        target = usernameDoc.data().uid;
-                    }
-                } catch (e) { console.error("Username lookup failed", e); }
-            }
-
-            setResolvedUid(target);
-
-            const data = await getUserProfile(target);
-            if (data) {
-                setProfile(data);
-                if (user && target === user.uid) {
-                    setFormData({
-                        displayName: data.displayName || '',
-                        favoriteColor: data.favoriteColor || 'Colorless'
-                    });
+            try {
+                // Guard: ensure firebase helpers and globals are ready
+                if (!window.fbHelpers || !window._db || !window._fb) {
+                    console.error("ProfilePage: Firebase not ready yet");
+                    return; // stays loading, but in practice this shouldn't happen
                 }
-                if (user && target !== user.uid) {
-                    const currentUserDoc = await getUserProfile(user.uid);
-                    if (currentUserDoc?.following?.includes(target)) {
-                        setIsFollowing(true);
-                    }
+                const { getUserProfile } = window.fbHelpers;
+
+                if (!target) {
+                    if (user) target = user.uid;
+                    else return;
                 }
-            } else {
+
+                if (target.length !== 28 && target !== user?.uid) {
+                    try {
+                        const { doc: fbDoc, getDoc: fbGetDoc } = window._fb();
+                        const usernameDoc = await fbGetDoc(fbDoc(window._db, 'artifacts', window._appId, 'public', 'data', 'usernames', target.toLowerCase()));
+                        if (usernameDoc.exists()) {
+                            target = usernameDoc.data().uid;
+                        }
+                    } catch (e) { console.error("Username lookup failed", e); }
+                }
+
+                setResolvedUid(target);
+
+                const data = await getUserProfile(target);
+                if (data) {
+                    setProfile(data);
+                    if (user && target === user.uid) {
+                        setFormData({
+                            displayName: data.displayName || '',
+                            favoriteColor: data.favoriteColor || 'Colorless'
+                        });
+                    }
+                    if (user && target !== user.uid) {
+                        const currentUserDoc = await getUserProfile(user.uid);
+                        if (currentUserDoc?.following?.includes(target)) {
+                            setIsFollowing(true);
+                        }
+                    }
+                } else {
+                    setNotFound(true);
+                }
+            } catch (e) {
+                console.error("ProfilePage load error:", e);
                 setNotFound(true);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         resolveAndLoad();
     }, [viewProfileId, user]);
@@ -78,6 +85,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
     const handleSave = async () => {
         if (!user || !isOwnProfile) return;
         try {
+            const { updateUserProfile } = window.fbHelpers;
             await updateUserProfile(user.uid, formData);
             setProfile({ ...profile, ...formData });
             setEditing(false);
@@ -91,6 +99,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
 
     const toggleFollow = async () => {
         if (!user || isOwnProfile) return;
+        const { followUser, unfollowUser } = window.fbHelpers;
         try {
             if (isFollowing) {
                 await unfollowUser(user.uid, targetUid);
@@ -108,6 +117,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
         const newProfile = { ...formData, favoriteCommander: card };
         setFormData(newProfile);
         if (!editing) {
+            const { updateUserProfile } = window.fbHelpers;
             await updateUserProfile(user.uid, { favoriteCommander: card });
             setProfile(prev => ({ ...prev, favoriteCommander: card }));
         }
@@ -116,6 +126,10 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
     if (loading) return <div className="flex items-center justify-center h-full text-[var(--text-muted)]">Loading Profile...</div>;
     if (notFound) return <div className="flex items-center justify-center h-full text-[var(--text-muted)]">Profile not found.</div>;
 
+    // Resolve window globals at render time (after loading completes)
+    const Icons = window.Icons;
+    const MTG_IDENTITIES = window.MTG_IDENTITIES;
+    const IdentityIcon = window.IdentityIcon;
     const CardSearch = window.CardSearch;
 
     return (
