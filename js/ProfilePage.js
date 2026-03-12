@@ -15,10 +15,6 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
     const MTG_IDENTITIES = window.MTG_IDENTITIES;
     const IdentityIcon = window.IdentityIcon;
     const { getUserProfile, updateUserProfile, followUser, unfollowUser } = window.fbHelpers;
-    const { doc, getDoc, signOut } = { ...window._fb(), signOut: window._auth ? window._authFns?.signOut : null };
-
-    const _db = window._db;
-    const _appId = window._appId;
 
     const [profile, setProfile] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
@@ -44,7 +40,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
             if (target.length !== 28 && target !== user?.uid) {
                 try {
                     const { doc: fbDoc, getDoc: fbGetDoc } = window._fb();
-                    const usernameDoc = await fbGetDoc(fbDoc(_db, 'artifacts', _appId, 'public', 'data', 'usernames', target.toLowerCase()));
+                    const usernameDoc = await fbGetDoc(fbDoc(window._db, 'artifacts', window._appId, 'public', 'data', 'usernames', target.toLowerCase()));
                     if (usernameDoc.exists()) {
                         target = usernameDoc.data().uid;
                     }
@@ -118,6 +114,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
     };
 
     if (loading) return <div className="flex items-center justify-center h-full text-[var(--text-muted)]">Loading Profile...</div>;
+    if (notFound) return <div className="flex items-center justify-center h-full text-[var(--text-muted)]">Profile not found.</div>;
 
     const CardSearch = window.CardSearch;
 
