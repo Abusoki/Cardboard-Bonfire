@@ -198,21 +198,27 @@ const OnlineRoom = ({ user, onLeave }) => {
     };
 
     const toggleOnlineTimer = async () => {
-        if (!joinedRoom || !isHost) return;
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
+        if (!joinedRoom) return;
+        const _isHost = window._db && roomData?.hostId === user.uid;
+        if (!_isHost) return;
+        const { doc: fbDoc, updateDoc: fbUpdateDoc, serverTimestamp: fbServerTimestamp } = window._fb();
+        const roomRef = fbDoc(window._db, 'artifacts', window._appId, 'public', 'data', 'rooms', joinedRoom);
         const timer = roomData?.timer || { isRunning: false, offset: 0, startTime: null };
         if (timer.isRunning) {
             const elapsed = Date.now() - (timer.startTime?.toMillis?.() || timer.startTime || Date.now());
-            await updateDoc(roomRef, { 'timer.isRunning': false, 'timer.offset': timer.offset + elapsed, 'timer.startTime': null });
+            await fbUpdateDoc(roomRef, { 'timer.isRunning': false, 'timer.offset': timer.offset + elapsed, 'timer.startTime': null });
         } else {
-            await updateDoc(roomRef, { 'timer.isRunning': true, 'timer.startTime': serverTimestamp() });
+            await fbUpdateDoc(roomRef, { 'timer.isRunning': true, 'timer.startTime': fbServerTimestamp() });
         }
     };
 
     const resetOnlineTimer = async () => {
-        if (!joinedRoom || !isHost) return;
-        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', joinedRoom);
-        await updateDoc(roomRef, { 'timer.isRunning': false, 'timer.offset': 0, 'timer.startTime': null });
+        if (!joinedRoom) return;
+        const _isHost = window._db && roomData?.hostId === user.uid;
+        if (!_isHost) return;
+        const { doc: fbDoc, updateDoc: fbUpdateDoc } = window._fb();
+        const roomRef = fbDoc(window._db, 'artifacts', window._appId, 'public', 'data', 'rooms', joinedRoom);
+        await fbUpdateDoc(roomRef, { 'timer.isRunning': false, 'timer.offset': 0, 'timer.startTime': null });
     };
 
     useEffect(() => {

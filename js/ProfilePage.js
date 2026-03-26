@@ -10,7 +10,61 @@
 //    window.CardSearch (set after CardSearch defined in main module)
 // =============================================================
 
+// --- Helper modal: Followers / Following list ---
+const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
+    const [profiles, setProfiles] = React.useState({});
+    React.useEffect(() => {
+        if (!uids || uids.length === 0 || !window.fbHelpers) return;
+        const { getUserProfile } = window.fbHelpers;
+        uids.forEach(uid => {
+            getUserProfile(uid).then(data => {
+                if (data) setProfiles(prev => ({ ...prev, [uid]: data }));
+            }).catch(() => {});
+        });
+    }, [uids]);
+
+    return (
+        <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
+            <div className="bg-[var(--bg-secondary)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)]">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <Icons.Users className="w-4 h-4 text-[var(--accent)]" /> {label}
+                    </h3>
+                    <button onClick={onClose}><Icons.X className="w-5 h-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" /></button>
+                </div>
+                <div className="max-h-80 overflow-y-auto scroll-container divide-y divide-[var(--border-light)]">
+                    {uids.length === 0 ? (
+                        <div className="p-8 text-center text-[var(--text-faint)] text-sm">No one here yet.</div>
+                    ) : uids.map(uid => {
+                        const p = profiles[uid];
+                        return (
+                            <button key={uid} onClick={() => onVisitProfile(uid)}
+                                className="w-full flex items-center gap-3 p-4 hover:bg-[var(--bg-elevated)] transition-colors text-left group">
+                                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center shrink-0">
+                                    <Icons.User className="w-5 h-5 text-[var(--accent)]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate">
+                                        {p?.displayName || uid}
+                                    </div>
+                                    {p?.stats && (
+                                        <div className="text-xs text-[var(--text-faint)]">
+                                            {p.stats.wins || 0}W · {p.stats.gamesPlayed || 0} games
+                                        </div>
+                                    )}
+                                </div>
+                                <Icons.ChevronRight className="w-4 h-4 text-[var(--text-faint)] group-hover:text-[var(--accent)] transition-colors" />
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
+
     const [profile, setProfile] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [editing, setEditing] = React.useState(false);
@@ -20,6 +74,7 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
     const [resolvedUid, setResolvedUid] = React.useState(null);
     const [notFound, setNotFound] = React.useState(false);
     const [showCopied, setShowCopied] = React.useState(false);
+    const [showSocialList, setShowSocialList] = React.useState(null); // { label, list: [uid, ...] }
 
     React.useEffect(() => {
         const resolveAndLoad = async () => {
@@ -168,10 +223,15 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
                     </div>
                 </div>
 
-                {/* Social Counts */}
+                {/* Social Counts — clickable to view lists */}
                 <div className="flex gap-6 justify-center md:justify-start">
-                    <div className="text-center md:text-left"><span className="text-2xl font-black text-[var(--text-primary)]">{profile?.followers?.length || 0}</span> <span className="text-xs text-[var(--text-faint)] uppercase font-bold">Followers</span></div>
-                    <div className="text-center md:text-left"><span className="text-2xl font-black text-[var(--text-primary)]">{profile?.following?.length || 0}</span> <span className="text-xs text-[var(--text-faint)] uppercase font-bold">Following</span></div>
+                    {[{ label: 'Followers', list: profile?.followers }, { label: 'Following', list: profile?.following }].map(({ label, list }) => (
+                        <button key={label} onClick={() => setShowSocialList({ label, list: list || [] })}
+                            className="text-center md:text-left hover:opacity-75 transition-opacity cursor-pointer group">
+                            <span className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{(list || []).length}</span>
+                            {' '}<span className="text-xs text-[var(--text-faint)] uppercase font-bold">{label}</span>
+                        </button>
+                    ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -267,6 +327,15 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
                 mode="commander"
                 allowPartner={false}
             />}
+            {showSocialList && (
+                <SocialListModal
+                    label={showSocialList.label}
+                    uids={showSocialList.list}
+                    Icons={Icons}
+                    onClose={() => setShowSocialList(null)}
+                    onVisitProfile={(uid) => { setShowSocialList(null); window.setViewProfile && window.setViewProfile(uid); }}
+                />
+            )}
         </div>
     );
 };
