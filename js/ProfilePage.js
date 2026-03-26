@@ -225,13 +225,16 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
 
                 {/* Social Counts — clickable to view lists */}
                 <div className="flex gap-6 justify-center md:justify-start">
-                    {[{ label: 'Followers', list: profile?.followers }, { label: 'Following', list: profile?.following }].map(({ label, list }) => (
-                        <button key={label} onClick={() => setShowSocialList({ label, list: list || [] })}
-                            className="text-center md:text-left hover:opacity-75 transition-opacity cursor-pointer group">
-                            <span className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{(list || []).length}</span>
-                            {' '}<span className="text-xs text-[var(--text-faint)] uppercase font-bold">{label}</span>
-                        </button>
-                    ))}
+                    <button onClick={() => setShowSocialList({ label: 'Followers', list: profile?.followers || [] })}
+                        className="text-center md:text-left hover:opacity-75 transition-opacity cursor-pointer group">
+                        <span className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{(profile?.followers || []).length}</span>
+                        {' '}<span className="text-xs text-[var(--text-faint)] uppercase font-bold underline-offset-2 group-hover:underline">Followers</span>
+                    </button>
+                    <button onClick={() => setShowSocialList({ label: 'Following', list: profile?.following || [] })}
+                        className="text-center md:text-left hover:opacity-75 transition-opacity cursor-pointer group">
+                        <span className="text-2xl font-black text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{(profile?.following || []).length}</span>
+                        {' '}<span className="text-xs text-[var(--text-faint)] uppercase font-bold underline-offset-2 group-hover:underline">Following</span>
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
