@@ -312,6 +312,8 @@ const OnlineRoom = ({ user, onLeave }) => {
             players.forEach(p => { if (p.id !== winnerId) { incrementUserStats(p.id, { gamesPlayed: 1 }); } });
             const winnerName = players.find(p => p.id === winnerId)?.name || 'Unknown';
             sendMessage(`🏆 Game Over! ${winnerName} wins! Stats have been recorded.`, null);
+            // Record full game history for all players
+            window.fbHelpers?.recordGameHistory(players, winnerId, joinedRoom, displayTimer);
         }
     }, [winnerId, isHost, players]);
 

@@ -380,279 +380,8 @@
         // --- Expose globals for js/PlayerCard.js ---
         window.Icons = Icons;
 
-        const MatchResultExportModal = ({ players, winnerId, roomName, duration, onClose }) => {
-            const canvasRef = useRef(null);
-            const [generating, setGenerating] = useState(false);
-            const [previewUrl, setPreviewUrl] = useState('');
-
-            const winner = players.find(p => p.id === winnerId);
-
-            useEffect(() => {
-                const generate = async () => {
-                    setGenerating(true);
-                    const canvas = canvasRef.current;
-                    const ctx = canvas.getContext('2d');
-
-                    // Background Gradient
-                    const grad = ctx.createLinearGradient(0, 0, 800, 600);
-                    grad.addColorStop(0, '#1e1b4b');
-                    grad.addColorStop(1, '#020617');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, 800, 600);
-
-                    // Decorative elements
-                    ctx.strokeStyle = 'rgba(147, 51, 234, 0.15)';
-                    ctx.lineWidth = 2;
-                    for (let i = 0; i < 20; i++) {
-                        ctx.beginPath();
-                        ctx.arc(Math.random() * 800, Math.random() * 600, Math.random() * 80, 0, Math.PI * 2);
-                        ctx.stroke();
-                    }
-
-                    // Header
-                    ctx.fillStyle = '#9333ea';
-                    ctx.font = '900 32px Inter, sans-serif';
-                    ctx.fillText('MATCH SUMMARY', 50, 60);
-
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = 'bold 16px Inter, sans-serif';
-                    ctx.fillText(roomName.toUpperCase(), 50, 85);
-
-                    // Winner Badge
-                    if (winner) {
-                        ctx.fillStyle = 'rgba(147, 51, 234, 0.2)';
-                        if (ctx.roundRect) ctx.roundRect(50, 110, 700, 140, 20);
-                        else ctx.fillRect(50, 110, 700, 140);
-                        ctx.fill();
-
-                        ctx.fillStyle = '#fbbf24';
-                        ctx.font = '900 20px Inter, sans-serif';
-                        ctx.fillText('🏆 WINNER', 80, 150);
-
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = '900 48px Inter, sans-serif';
-                        ctx.fillText(winner.name, 80, 205);
-
-                        if (winner.commander?.name) {
-                            ctx.fillStyle = '#d8b4fe';
-                            ctx.font = 'bold 20px Inter, sans-serif';
-                            ctx.fillText(winner.commander.name, 80, 230);
-                        }
-                    }
-
-                    // Players Section
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '900 24px Inter, sans-serif';
-                    ctx.fillText('Final Standings', 50, 300);
-
-                    players.slice(0, 5).forEach((p, i) => {
-                        const y = 350 + (i * 50);
-                        ctx.fillStyle = p.isDead ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.08)';
-                        if (ctx.roundRect) ctx.roundRect(50, y - 35, 700, 40, 10);
-                        else ctx.fillRect(50, y - 35, 700, 40);
-                        ctx.fill();
-
-                        ctx.fillStyle = p.isDead ? '#475569' : '#f1f5f9';
-                        ctx.font = 'bold 18px Inter, sans-serif';
-                        ctx.fillText(p.name, 70, y - 8);
-
-                        ctx.font = 'bold 16px Inter, sans-serif';
-                        ctx.textAlign = 'right';
-                        ctx.fillText(p.isDead ? 'ELIMINATED' : `${p.life} HP`, 730, y - 8);
-                        ctx.textAlign = 'left';
-                    });
-
-                    // Footer
-                    ctx.fillStyle = '#0f172a';
-                    ctx.fillRect(0, 540, 800, 60);
-
-                    ctx.fillStyle = '#a78bfa';
-                    ctx.font = '900 14px Inter, sans-serif';
-                    ctx.fillText('CARDBOARD BONFIRE • MTG COMPANION', 50, 575);
-
-                    ctx.textAlign = 'right';
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = 'bold 14px Inter, sans-serif';
-                    ctx.fillText(`Duration: ${duration} • ${new Date().toLocaleDateString()}`, 750, 575);
-                    ctx.textAlign = 'left';
-
-                    setPreviewUrl(canvas.toDataURL('image/png'));
-                    setGenerating(false);
-                };
-                generate();
-            }, [players, winnerId, roomName, duration]);
-
-            const share = async () => {
-                const blob = await (await fetch(previewUrl)).blob();
-                const file = new File([blob], 'match-result.png', { type: 'image/png' });
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            files: [file],
-                            title: 'MTG Match Result',
-                            text: `Epic game in ${roomName}!`
-                        });
-                    } catch (e) {
-                        const link = document.createElement('a');
-                        link.download = `match-${roomName}.png`;
-                        link.href = previewUrl;
-                        link.click();
-                    }
-                } else {
-                    const link = document.createElement('a');
-                    link.download = `match-${roomName}.png`;
-                    link.href = previewUrl;
-                    link.click();
-                }
-            };
-
-            return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                        <div className="p-8 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-secondary)]/50">
-                            <div>
-                                <h2 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Share Results</h2>
-                                <p className="text-sm text-[var(--text-muted)] font-medium uppercase tracking-wider">Generate match summary card</p>
-                            </div>
-                            <button onClick={onClose} className="p-3 hover:bg-[var(--bg-elevated)] rounded-2xl transition-all border border-transparent hover:border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"><Icons.X className="w-6 h-6" /></button>
-                        </div>
-
-                        <div className="p-10 flex flex-col items-center">
-                            <canvas ref={canvasRef} width="800" height="600" className="hidden" />
-                            {generating ? (
-                                <div className="w-full aspect-[4/3] bg-[var(--bg-primary)] rounded-3xl flex items-center justify-center border border-[var(--border)] shadow-inner">
-                                    <div className="text-center">
-                                        <div className="w-16 h-16 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                                        <div className="text-[var(--text-muted)] font-black uppercase tracking-widest text-xs">Forging Result Card...</div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="relative group perspective-1000">
-                                    <img src={previewUrl} className="w-full h-auto rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] border border-[var(--border)] transition-transform duration-500 group-hover:scale-[1.02]" alt="Result Preview" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-3xl backdrop-blur-[2px]">
-                                        <div className="bg-white/10 p-5 rounded-full text-white backdrop-blur-md border border-white/20 scale-90 group-hover:scale-100 transition-transform duration-500">
-                                            <Icons.Share className="w-10 h-10" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-4 w-full mt-10">
-                                <button onClick={onClose} className="py-5 rounded-3xl font-black uppercase tracking-widest text-xs bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)] transition-all border border-[var(--border)]">Close</button>
-                                <button onClick={share} className="py-5 rounded-3xl font-black uppercase tracking-widest text-xs bg-purple-600 text-white hover:bg-purple-500 transition-all shadow-[0_10px_30px_-10px_rgba(147,51,234,0.5)] flex items-center justify-center gap-3">
-                                    <Icons.Share className="w-5 h-5" /> {navigator.share ? 'Share Card' : 'Download Image'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const StatsExportModal = ({ user, stats, onClose }) => {
-            const canvasRef = useRef(null);
-            const [generating, setGenerating] = useState(false);
-            const [previewUrl, setPreviewUrl] = useState('');
-
-            useEffect(() => {
-                const generate = async () => {
-                    setGenerating(true);
-                    const canvas = canvasRef.current;
-                    const ctx = canvas.getContext('2d');
-
-                    // BG
-                    const grad = ctx.createLinearGradient(0, 0, 800, 600);
-                    grad.addColorStop(0, '#2e1065');
-                    grad.addColorStop(1, '#020617');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, 800, 600);
-
-                    // Header
-                    ctx.fillStyle = '#a78bfa';
-                    ctx.font = '900 40px Inter, sans-serif';
-                    ctx.fillText((user?.displayName || 'PLAYER').toUpperCase(), 50, 80);
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = 'bold 16px Inter, sans-serif';
-                    ctx.fillText('CARDBOARD BONFIRE PRO-STATS', 50, 110);
-
-                    // Stats Grid
-                    const s = stats.deathStats || {};
-                    const total = (s.standard || 0) + (s.commander || 0) + (s.poison || 0) + (s.milled || 0);
-
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-                    if (ctx.roundRect) ctx.roundRect(50, 150, 700, 120, 20); else ctx.fillRect(50, 150, 700, 120);
-                    ctx.fill();
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '900 32px Inter, sans-serif';
-                    ctx.fillText(total.toLocaleString(), 80, 210);
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = 'bold 14px Inter, sans-serif';
-                    ctx.fillText('GLOBAL DEATHS RECORDED', 80, 235);
-
-                    // Top Commander
-                    if (stats.topCommander) {
-                        ctx.fillStyle = 'rgba(147, 51, 234, 0.2)';
-                        if (ctx.roundRect) ctx.roundRect(50, 290, 700, 230, 20); else ctx.fillRect(50, 290, 700, 230);
-                        ctx.fill();
-
-                        ctx.fillStyle = '#fbbf24';
-                        ctx.font = '900 14px Inter, sans-serif';
-                        ctx.fillText('SIGNATURE COMMANDER', 80, 330);
-
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = '900 48px Inter, sans-serif';
-                        ctx.fillText(stats.topCommander.name, 80, 390);
-
-                        ctx.fillStyle = '#d8b4fe';
-                        ctx.font = 'bold 20px Inter, sans-serif';
-                        ctx.fillText(`${stats.topCommander.count} Total Picks Across Games`, 80, 420);
-                    }
-
-                    ctx.fillStyle = '#0f172a';
-                    ctx.fillRect(0, 540, 800, 60);
-                    ctx.fillStyle = '#a78bfa';
-                    ctx.font = 'bold 14px Inter, sans-serif';
-                    ctx.fillText('CARDBOARD BONFIRE • MTG COMPANION', 50, 575);
-
-                    setPreviewUrl(canvas.toDataURL('image/png'));
-                    setGenerating(false);
-                };
-                generate();
-            }, [user, stats]);
-
-            const share = async () => {
-                const blob = await (await fetch(previewUrl)).blob();
-                const file = new File([blob], 'stats-card.png', { type: 'image/png' });
-                if (navigator.share) {
-                    try { await navigator.share({ files: [file], title: 'My MTG Stats', text: 'Check out my MTG Companion stats!' }); }
-                    catch (e) { const link = document.createElement('a'); link.download = 'my-stats.png'; link.href = previewUrl; link.click(); }
-                } else {
-                    const link = document.createElement('a'); link.download = 'my-stats.png'; link.href = previewUrl; link.click();
-                }
-            };
-
-            return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in">
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-[2.5rem] w-full max-w-2xl overflow-hidden">
-                        <div className="p-8 border-b border-[var(--border)] flex justify-between items-center">
-                            <h2 className="text-2xl font-black text-[var(--text-primary)] italic">PRO-STATS CARD</h2>
-                            <button onClick={onClose} className="p-2 hover:bg-[var(--bg-card)] rounded-full text-[var(--text-muted)]"><Icons.X className="w-6 h-6" /></button>
-                        </div>
-                        <div className="p-10 flex flex-col items-center">
-                            <canvas ref={canvasRef} width="800" height="600" className="hidden" />
-                            <img src={previewUrl} className="w-full h-auto rounded-3xl shadow-2xl border border-[var(--border)]" alt="Stats Card" />
-                            <div className="grid grid-cols-2 gap-4 w-full mt-10">
-                                <button onClick={onClose} className="py-4 rounded-2xl bg-[var(--bg-elevated)] text-[var(--text-muted)] font-bold uppercase tracking-widest text-xs">Close</button>
-                                <button onClick={share} className="py-4 rounded-2xl bg-[var(--accent)] text-white font-bold uppercase tracking-widest text-xs shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2">
-                                    <Icons.Share className="w-4 h-4" /> Export
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+        // MatchResultExportModal → js/modals.js (window.MatchResultExportModal)
+        // StatsExportModal       → js/modals.js (window.StatsExportModal)
 
         // 5. Stats Page
         // StatsPage (defined in js/StatsPage.js)
@@ -864,14 +593,23 @@
                 const unsubscribe = onAuthStateChanged(auth, async (u) => {
                     if (u) {
                         setUser(u);
-                        // Also try fetch profile?
+                        // Update lastSeen immediately on login
+                        window.fbHelpers?.updateLastSeen(u.uid);
                     } else {
-                        // FIX: Do NOT auto sign-in anonymously if we want an auth gate
                         setUser(null);
                     }
                 });
                 return () => unsubscribe();
             }, []);
+
+            // lastSeen heartbeat — fires every 3 minutes while logged in
+            useEffect(() => {
+                if (!user || user.isAnonymous) return;
+                const interval = setInterval(() => {
+                    window.fbHelpers?.updateLastSeen(user.uid);
+                }, 3 * 60 * 1000);
+                return () => clearInterval(interval);
+            }, [user?.uid]);
 
             if (!user) {
                 return <AuthPage />;

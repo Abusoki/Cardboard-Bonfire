@@ -83,6 +83,36 @@ const incrementUserStats = async (uid, { wins = 0, gamesPlayed = 0 }) => {
     }, { merge: true });
 };
 
+const updateLastSeen = async (uid) => {
+    if (!uid || !window._db || !window._fb) return;
+    try {
+        const { doc, setDoc, serverTimestamp } = window._fb();
+        const docRef = doc(window._db, 'artifacts', window._appId, 'public', 'data', 'users', uid);
+        await setDoc(docRef, { lastSeen: serverTimestamp() }, { merge: true });
+    } catch (e) { /* silent - non-critical */ }
+};
+
+// Records a compact game summary to each player's history (capped at 20).
+const recordGameHistory = async (players, winnerId, roomName, duration) => {
+    if (!players || players.length === 0 || !window._db || !window._fb) return;
+    const { doc, getDoc, setDoc, serverTimestamp } = window._fb();
+    const record = {
+        roomName,
+        duration,
+        winnerId,
+        winnerName: players.find(p => p.id === winnerId)?.name || 'Unknown',
+        players: players.map(p => ({ id: p.id, name: p.name, life: p.life })),
+        playedAt: Date.now(),
+    };
+    await Promise.allSettled(players.map(async (p) => {
+        const docRef = doc(window._db, 'artifacts', window._appId, 'public', 'data', 'users', p.id);
+        const snap = await getDoc(docRef);
+        const existing = snap.exists() ? (snap.data().recentGames || []) : [];
+        const updated = [record, ...existing].slice(0, 20);
+        await setDoc(docRef, { recentGames: updated, lastActive: serverTimestamp() }, { merge: true });
+    }));
+};
+
 const followUser = async (currentUid, targetUid) => {
     if (!currentUid || !targetUid || currentUid === targetUid) return;
     const { doc, writeBatch, arrayUnion } = window._fb();
@@ -108,6 +138,8 @@ window.fbHelpers = {
     getUserProfile,
     updateUserProfile,
     incrementUserStats,
+    updateLastSeen,
+    recordGameHistory,
     followUser,
     unfollowUser,
 };

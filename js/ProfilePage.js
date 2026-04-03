@@ -10,7 +10,7 @@
 //    window.CardSearch (set after CardSearch defined in main module)
 // =============================================================
 
-// --- Helper modal: Followers / Following list ---
+// --- Helper modal: Followers / Following list with avatars + online presence ---
 const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
     const [profiles, setProfiles] = React.useState({});
     React.useEffect(() => {
@@ -23,12 +23,18 @@ const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
         });
     }, [uids]);
 
+    const isOnline = (p) => {
+        if (!p?.lastSeen) return false;
+        const ms = p.lastSeen?.toMillis ? p.lastSeen.toMillis() : (p.lastSeen || 0);
+        return Date.now() - ms < 5 * 60 * 1000;
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4 backdrop-blur-md" onClick={onClose}>
             <div className="bg-[var(--bg-secondary)] w-full max-w-sm rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-card)]">
                     <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <Icons.Users className="w-4 h-4 text-[var(--accent)]" /> {label}
+                        <Icons.Users className="w-4 h-4 text-[var(--accent)]" /> {label} ({uids.length})
                     </h3>
                     <button onClick={onClose}><Icons.X className="w-5 h-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" /></button>
                 </div>
@@ -37,15 +43,36 @@ const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
                         <div className="p-8 text-center text-[var(--text-faint)] text-sm">No one here yet.</div>
                     ) : uids.map(uid => {
                         const p = profiles[uid];
+                        const loaded = p !== undefined;
+                        const online = isOnline(p);
+                        const avatar = p?.favoriteCommander?.image;
+
+                        // Shimmer skeleton while profile is loading
+                        if (!loaded) return (
+                            <div key={uid} className="flex items-center gap-3 p-4 animate-pulse">
+                                <div className="w-10 h-10 rounded-full bg-[var(--bg-elevated)] shrink-0" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3 bg-[var(--bg-elevated)] rounded-full w-2/3" />
+                                    <div className="h-2.5 bg-[var(--bg-elevated)] rounded-full w-1/3" />
+                                </div>
+                            </div>
+                        );
+
                         return (
                             <button key={uid} onClick={() => onVisitProfile(uid)}
                                 className="w-full flex items-center gap-3 p-4 hover:bg-[var(--bg-elevated)] transition-colors text-left group">
-                                <div className="w-10 h-10 rounded-full bg-[var(--accent)]/20 flex items-center justify-center shrink-0">
-                                    <Icons.User className="w-5 h-5 text-[var(--accent)]" />
+                                <div className="relative shrink-0">
+                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--accent)]/20 flex items-center justify-center border border-[var(--border)]">
+                                        {avatar
+                                            ? <img src={avatar} alt="" className="w-full h-full object-cover" />
+                                            : <Icons.User className="w-5 h-5 text-[var(--accent)]" />}
+                                    </div>
+                                    {online && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-[var(--bg-secondary)] rounded-full" title="Online" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate">
-                                        {p?.displayName || uid}
+                                        {p?.displayName || 'Unknown Player'}
+                                        {online && <span className="ml-2 text-[10px] text-green-400 font-bold">● Online</span>}
                                     </div>
                                     {p?.stats && (
                                         <div className="text-xs text-[var(--text-faint)]">
@@ -59,6 +86,79 @@ const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
                     })}
                 </div>
             </div>
+        </div>
+    );
+};
+
+// --- User Search component ---
+const UserSearch = ({ Icons, onVisitProfile }) => {
+    const [query, setQuery] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+    const [result, setResult] = React.useState(null); // { found: bool, uid, profile }
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        const cleanId = query.trim().toLowerCase();
+        if (!cleanId || cleanId.length < 2) return;
+        setLoading(true);
+        setResult(null);
+        try {
+            const { doc, getDoc } = window._fb();
+            const usernameRef = doc(window._db, 'artifacts', window._appId, 'public', 'data', 'usernames', cleanId);
+            const usernameSnap = await getDoc(usernameRef);
+            if (usernameSnap.exists()) {
+                const uid = usernameSnap.data().uid;
+                const profile = await window.fbHelpers.getUserProfile(uid);
+                setResult({ found: true, uid, profile });
+            } else {
+                setResult({ found: false });
+            }
+        } catch (e) {
+            console.error('User search error:', e);
+            setResult({ found: false });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)]">
+            <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                <Icons.Search className="w-5 h-5 text-[var(--accent)]" /> Find Players
+            </h2>
+            <form onSubmit={handleSearch} className="flex gap-2">
+                <input
+                    type="text"
+                    placeholder="Search by username..."
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    className="flex-1 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-4 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] outline-none text-sm"
+                />
+                <button type="submit" disabled={loading} className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white px-4 py-2 rounded-lg font-bold text-sm disabled:opacity-50 transition-all">
+                    {loading ? '...' : 'Search'}
+                </button>
+            </form>
+            {result && (
+                <div className="mt-4">
+                    {!result.found ? (
+                        <div className="text-sm text-[var(--text-faint)] text-center py-3">No player found with that username.</div>
+                    ) : (
+                        <button onClick={() => onVisitProfile(result.uid)}
+                            className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-[var(--bg-elevated)] transition-colors group text-left border border-[var(--border)]">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[var(--accent)]/20 border border-[var(--border)] shrink-0 flex items-center justify-center">
+                                {result.profile?.favoriteCommander?.image
+                                    ? <img src={result.profile.favoriteCommander.image} alt="" className="w-full h-full object-cover" />
+                                    : <Icons.User className="w-6 h-6 text-[var(--accent)]" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{result.profile?.displayName || result.uid}</div>
+                                <div className="text-xs text-[var(--text-faint)]">{result.profile?.stats?.wins || 0}W · {result.profile?.stats?.gamesPlayed || 0} games</div>
+                            </div>
+                            <Icons.ChevronRight className="w-5 h-5 text-[var(--text-faint)] group-hover:text-[var(--accent)]" />
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -191,35 +291,54 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
         <div className="absolute inset-0 p-8 overflow-y-auto scroll-container pb-24">
             <div className="max-w-2xl mx-auto space-y-8">
                 {onBack && <button onClick={onBack} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 mb-4"><Icons.ChevronLeft className="w-4 h-4" /> Back</button>}
-                <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                        <Icons.User className="w-8 h-8 text-purple-500" />
-                        {isOwnProfile ? 'My Profile' : (profile?.displayName || 'Player Profile')}
-                    </h1>
-                    <div className="flex gap-2">
-                        {isOwnProfile ? (
-                            <>
-                                <button onClick={() => {
-                                    const url = window.location.origin + window.location.pathname + '?profile=' + (profile.displayName || user.uid);
-                                    navigator.clipboard.writeText(url);
-                                    setShowCopied(true);
-                                    setTimeout(() => setShowCopied(false), 2000);
-                                }} className="bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 px-4 py-2 rounded-lg font-bold transition-colors border border-purple-900/50 flex items-center gap-2">
-                                    <Icons.Share className="w-5 h-5" />
-                                    {showCopied ? 'Copied!' : 'Share'}
-                                </button>
-                                <button onClick={() => setEditing(!editing)} className="bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] px-4 py-2 rounded-lg font-bold transition-colors border border-[var(--border)]">
-                                    {editing ? 'Cancel' : 'Edit Profile'}
-                                </button>
-                                <button onClick={handleLogout} className="bg-red-900/30 hover:bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-bold transition-colors border border-red-900/50">
-                                    <Icons.LogOut className="w-5 h-5" />
-                                </button>
-                            </>
-                        ) : (
-                            <button onClick={toggleFollow} className={`px-6 py-2 rounded-lg font-bold transition-all border ${isFollowing ? 'bg-transparent border-[var(--border)] text-[var(--text-muted)] hover:border-red-500 hover:text-red-500' : 'bg-[var(--accent)] border-[var(--accent-hover)] text-white hover:bg-[var(--accent-hover)]'}`}>
-                                {isFollowing ? 'Unfollow' : 'Follow'}
-                            </button>
-                        )}
+                <div className="flex items-start gap-5">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[var(--border)] bg-[var(--bg-elevated)] flex items-center justify-center shadow-xl">
+                            {profile?.favoriteCommander?.image
+                                ? <img src={profile.favoriteCommander.image} alt={profile.favoriteCommander.name} className="w-full h-full object-cover" />
+                                : <Icons.User className="w-10 h-10 text-[var(--accent)]" />}
+                        </div>
+                        {/* Green dot: always show on own profile (they're here!), or when other profile is recently active */}
+                        {isOwnProfile
+                            ? <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-[var(--bg-secondary)] rounded-full" title="You are online" />
+                            : ((() => {
+                                const ms = profile?.lastSeen?.toMillis ? profile.lastSeen.toMillis() : (profile?.lastSeen || 0);
+                                const online = ms && (Date.now() - ms) < 5 * 60 * 1000;
+                                return online ? <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-[var(--bg-secondary)] rounded-full" title="Online now" /> : null;
+                            })())
+                        }
+                    </div>
+                    {/* Title + actions */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                            <div>
+                                <h1 className="text-3xl font-bold text-white">{isOwnProfile ? 'My Profile' : (profile?.displayName || 'Player Profile')}</h1>
+                                {profile?.favoriteCommander?.name && (
+                                    <p className="text-xs text-[var(--text-faint)] mt-1">Commander: {profile.favoriteCommander.name}</p>
+                                )}
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                                {isOwnProfile ? (
+                                    <>
+                                        <button onClick={() => { const url = window.location.origin + window.location.pathname + '?profile=' + (profile.displayName || user.uid); navigator.clipboard.writeText(url); setShowCopied(true); setTimeout(() => setShowCopied(false), 2000); }} className="bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 px-4 py-2 rounded-lg font-bold transition-colors border border-purple-900/50 flex items-center gap-2">
+                                            <Icons.Share className="w-5 h-5" />
+                                            {showCopied ? 'Copied!' : 'Share'}
+                                        </button>
+                                        <button onClick={() => setEditing(!editing)} className="bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] text-[var(--text-primary)] px-4 py-2 rounded-lg font-bold transition-colors border border-[var(--border)]">
+                                            {editing ? 'Cancel' : 'Edit Profile'}
+                                        </button>
+                                        <button onClick={handleLogout} className="bg-red-900/30 hover:bg-red-900/50 text-red-200 px-4 py-2 rounded-lg font-bold transition-colors border border-red-900/50">
+                                            <Icons.LogOut className="w-5 h-5" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={toggleFollow} className={`px-6 py-2 rounded-lg font-bold transition-all border ${isFollowing ? 'bg-transparent border-[var(--border)] text-[var(--text-muted)] hover:border-red-500 hover:text-red-500' : 'bg-[var(--accent)] border-[var(--accent-hover)] text-white hover:bg-[var(--accent-hover)]'}`}>
+                                        {isFollowing ? 'Unfollow' : 'Follow'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -323,6 +442,50 @@ const ProfilePage = ({ user, viewProfileId = null, onBack = null }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Recent Games */}
+                <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)]">
+                    <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                        <Icons.Clock className="w-5 h-5 text-[var(--accent)]" /> Recent Games
+                    </h2>
+                    {(!profile?.recentGames || profile.recentGames.length === 0) ? (
+                        <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                            <div className="w-14 h-14 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center">
+                                <Icons.Sword className="w-6 h-6 text-[var(--text-faint)] opacity-50" />
+                            </div>
+                            <div className="text-sm font-bold text-[var(--text-faint)]">No recorded games yet.</div>
+                            <div className="text-xs text-[var(--text-faint)] opacity-70">Join an online room to start building your history.</div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {profile.recentGames.slice(0, 5).map((g, i) => {
+                                const isWinner = g.winnerId === (targetUid || user?.uid);
+                                const date = g.playedAt ? new Date(g.playedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '?';
+                                return (
+                                    <div key={i} className={`flex items-center gap-4 p-3 rounded-xl border ${isWinner ? 'border-green-500/30 bg-green-500/5' : 'border-[var(--border-light)] bg-[var(--bg-card)]'}`}>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${isWinner ? 'bg-green-500/20 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                            {isWinner ? 'W' : 'L'}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-[var(--text-primary)] text-sm truncate">{g.roomName || 'Private Room'}</div>
+                                            <div className="text-xs text-[var(--text-faint)]">
+                                                {g.players?.map(p => p.name).join(', ')} · {g.duration || '—'}
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <div className={`text-xs font-bold ${isWinner ? 'text-green-400' : 'text-[var(--text-faint)]'}`}>{isWinner ? '🏆 Won' : 'Lost'}</div>
+                                            <div className="text-[10px] text-[var(--text-faint)]">{date}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Find Players */}
+                <UserSearch Icons={Icons} onVisitProfile={(uid) => window.setViewProfile && window.setViewProfile(uid)} />
+
             </div>
             {showCmdrSearch && CardSearch && <CardSearch
                 onSelect={(card) => { updateCommander(card); setShowCmdrSearch(false); }}
