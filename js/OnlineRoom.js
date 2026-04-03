@@ -402,7 +402,7 @@ const OnlineRoom = ({ user, onLeave }) => {
                             <div ref={chatEndRef} />
                         </div>
                         <div className="p-3 border-t border-[var(--border)] bg-[var(--bg-elevated)]/50 rounded-b-2xl flex gap-2">
-                            <input className="flex-1 bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 placeholder:text-[var(--text-faint)]" placeholder="Type message..." value={chatInput} onChange={e => e.target.value && setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} />
+                            <input className="flex-1 bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 placeholder:text-[var(--text-faint)]" placeholder="Type message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} />
                             <button onClick={sendMessage} className="p-2.5 bg-purple-600 hover:bg-purple-500 rounded-xl text-white shadow-lg shadow-purple-900/20 active:scale-95 transition-all"><Icons.Send className="w-5 h-5" /></button>
                         </div>
                     </div>

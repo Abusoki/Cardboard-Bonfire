@@ -17,9 +17,9 @@ const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
         if (!uids || uids.length === 0 || !window.fbHelpers) return;
         const { getUserProfile } = window.fbHelpers;
         uids.forEach(uid => {
-            getUserProfile(uid).then(data => {
-                if (data) setProfiles(prev => ({ ...prev, [uid]: data }));
-            }).catch(() => {});
+            getUserProfile(uid)
+                .then(data => setProfiles(prev => ({ ...prev, [uid]: data || null })))
+                .catch(() => setProfiles(prev => ({ ...prev, [uid]: null })));
         });
     }, [uids]);
 
@@ -43,7 +43,7 @@ const SocialListModal = ({ label, uids, Icons, onClose, onVisitProfile }) => {
                         <div className="p-8 text-center text-[var(--text-faint)] text-sm">No one here yet.</div>
                     ) : uids.map(uid => {
                         const p = profiles[uid];
-                        const loaded = p !== undefined;
+                        const loaded = uid in profiles; // key present means fetch resolved (even if null)
                         const online = isOnline(p);
                         const avatar = p?.favoriteCommander?.image;
 
